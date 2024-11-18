@@ -7,10 +7,12 @@ import (
 	"os/signal"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/xdefrag/panarchybot/chatgpt"
+	"github.com/xdefrag/panarchybot/db"
 	"github.com/xdefrag/panarchybot/tgbot"
 )
 
@@ -39,7 +41,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	tgbot := tgbot.New(l, nil, bot, gpt)
+	pg, err := pgx.Connect(ctx, os.Getenv("POSTGRES_DSN"))
+	if err != nil {
+		l.ErrorContext(ctx, err.Error())
+		os.Exit(1)
+	}
+
+	tgbot := tgbot.New(l, db.New(pg), bot, gpt)
 
 	tgbot.Run(ctx) // blocking
 }

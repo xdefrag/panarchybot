@@ -9,6 +9,21 @@ import (
 	"context"
 )
 
+const createBalance = `-- name: CreateBalance :exec
+INSERT INTO balances (user_id, asset, pending, sent, created_at, updated_at)
+  VALUES($1, $2, 0, 0, now(), now())
+`
+
+type CreateBalanceParams struct {
+	UserID int64
+	Asset  string
+}
+
+func (q *Queries) CreateBalance(ctx context.Context, arg CreateBalanceParams) error {
+	_, err := q.db.Exec(ctx, createBalance, arg.UserID, arg.Asset)
+	return err
+}
+
 const createState = `-- name: CreateState :exec
 INSERT INTO states (user_id, state, data, meta, created_at)
   VALUES ($1, $2, $3, $4, now())
@@ -31,6 +46,38 @@ func (q *Queries) CreateState(ctx context.Context, arg CreateStateParams) error 
 	return err
 }
 
+const getBalances = `-- name: GetBalances :many
+SELECT user_id, asset, pending, sent, created_at, updated_at FROM balances
+WHERE user_id = $1
+`
+
+func (q *Queries) GetBalances(ctx context.Context, userID int64) ([]Balance, error) {
+	rows, err := q.db.Query(ctx, getBalances, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Balance
+	for rows.Next() {
+		var i Balance
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Asset,
+			&i.Pending,
+			&i.Sent,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getState = `-- name: GetState :one
 SELECT user_id, state, data, meta, created_at FROM states
 WHERE user_id = $1
@@ -49,4 +96,40 @@ func (q *Queries) GetState(ctx context.Context, userID int64) (State, error) {
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const updateBalancePending = `-- name: UpdateBalancePending :exec
+UPDATE balances
+SET pending = $1
+WHERE user_id = $2
+  AND asset = $3
+`
+
+type UpdateBalancePendingParams struct {
+	Pending float64
+	UserID  int64
+	Asset   string
+}
+
+func (q *Queries) UpdateBalancePending(ctx context.Context, arg UpdateBalancePendingParams) error {
+	_, err := q.db.Exec(ctx, updateBalancePending, arg.Pending, arg.UserID, arg.Asset)
+	return err
+}
+
+const updateBalanceSent = `-- name: UpdateBalanceSent :exec
+UPDATE balances
+SET sent = $1
+WHERE user_id = $2
+  AND asset = $3
+`
+
+type UpdateBalanceSentParams struct {
+	Sent   float64
+	UserID int64
+	Asset  string
+}
+
+func (q *Queries) UpdateBalanceSent(ctx context.Context, arg UpdateBalanceSentParams) error {
+	_, err := q.db.Exec(ctx, updateBalanceSent, arg.Sent, arg.UserID, arg.Asset)
+	return err
 }

@@ -2,6 +2,7 @@ GITHEAD:=$(shell git rev-parse HEAD)
 CMD:=./cmd/panarchybot/...
 OUTPUT:=./dist/panarchybot
 LDFLAGS:=-ldflags="-X 'main.Commit=${GITHEAD}'"
+MIGRATE_DSN:="dbname=panarchybot sslmode=disable"
 
 default: build
 
@@ -20,12 +21,12 @@ test: build
 
 .PHONY: migrate-status
 migrate-status:
-	goose -dir migrations postgres "dbname=mlm sslmode=disable" status
+	goose -dir migrations postgres ${MIGRATE_DSN} status
 
 .PHONY: migrate-generate
 migrate-generate:
-	goose -dir migrations postgres "dbname=mlm sslmode=disable" create ${name} sql
+	goose -dir migrations postgres ${MIGRATE_DSN} create ${name} sql
 
 .PHONY: migrate-up
 migrate-up:
-	goose -dir migrations postgres "dbname=mlm sslmode=disable" up
+	goose -dir migrations postgres ${MIGRATE_DSN} up

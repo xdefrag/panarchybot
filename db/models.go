@@ -8,6 +8,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Balance struct {
+	UserID    int64
+	Asset     string
+	Pending   float64
+	Sent      float64
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
+
 type State struct {
 	UserID    int64
 	State     string

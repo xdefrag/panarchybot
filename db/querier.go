@@ -9,8 +9,12 @@ import (
 )
 
 type Querier interface {
+	CreateBalance(ctx context.Context, arg CreateBalanceParams) error
 	CreateState(ctx context.Context, arg CreateStateParams) error
+	GetBalances(ctx context.Context, userID int64) ([]Balance, error)
 	GetState(ctx context.Context, userID int64) (State, error)
+	UpdateBalancePending(ctx context.Context, arg UpdateBalancePendingParams) error
+	UpdateBalanceSent(ctx context.Context, arg UpdateBalanceSentParams) error
 }
 
 var _ Querier = (*Queries)(nil)

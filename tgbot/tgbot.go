@@ -43,24 +43,31 @@ const (
 )
 
 func (t *TGBot) handle(ctx context.Context, upd tgbotapi.Update, l *slog.Logger) error {
-	if upd.Message != nil && upd.Message.ForwardFromChat.ID == mainChannelID {
-		l.InfoContext(ctx, "main channel message")
+	if upd.Message != nil && upd.Message.ForwardFromChat != nil && upd.Message.ForwardFromChat.ID == mainChannelID {
+		return t.handleMainChannel(ctx, upd, l)
+	}
 
-		// q, err := t.gpt.MakeQuestion(ctx, fmt.Sprintf("What do you think about this message? %s", upd.Message.Text))
-		// if err != nil {
-		// 	return err
-		// }
+	return nil
+}
 
-		msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "I'm a bot, I don't have an opinion")
-		msg.ReplyToMessageID = upd.Message.MessageID
-		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonURL("my twitter", "https://twitter.com/xdefrag"),
-			),
-		)
-		if _, err := t.bot.Send(msg); err != nil {
-			return err
-		}
+func (t *TGBot) handleMainChannel(ctx context.Context, upd tgbotapi.Update, l *slog.Logger) error {
+	l.InfoContext(ctx, "main channel message")
+
+	q, err := t.gpt.MakeQuestion(ctx, upd.Message.Text)
+	if err != nil {
+		return err
+	}
+
+	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, q)
+	msg.ReplyToMessageID = upd.Message.MessageID
+	msg.ParseMode = tgbotapi.ModeHTML
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("Запишись на эйрдроп", "https://panarchybot.t.me"),
+		),
+	)
+	if _, err := t.bot.Send(msg); err != nil {
+		return err
 	}
 
 	return nil

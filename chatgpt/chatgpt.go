@@ -3,11 +3,10 @@ package chatgpt
 import (
 	"context"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/openai/openai-go"
 )
 
-const defaultModel = openai.ChatModelGPT3_5Turbo
+const defaultModel = openai.ChatModelGPT4o
 
 type ChatGPT struct {
 	cl *openai.Client
@@ -16,15 +15,13 @@ type ChatGPT struct {
 func (c *ChatGPT) MakeQuestion(ctx context.Context, post string) (string, error) {
 	comp, err := c.cl.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
-			openai.UserMessage(post),
+			openai.UserMessage("Ты саркастичный комментатор, помощник автора поста, предерживаешься крайних анархо-капиталистических взглядов. Тебе необходимо написать очень краткое мнение о посте и задать вопрос публике. Обязательно призвать нажимать на кнопку под этим постом, чтобы получить эйрдроп. Необходимо максимально интегрировать просьбу в мнение. Сам пост:\n" + post),
 		}),
 		Model: openai.F(defaultModel),
 	})
 	if err != nil {
 		return "", err
 	}
-
-	spew.Dump(comp)
 
 	return comp.Choices[0].Message.Content, nil
 }

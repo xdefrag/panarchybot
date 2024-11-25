@@ -21,8 +21,10 @@
 go.work
 go.work.sum
 
-# env file
+# configs
 .env
+panarchybot.dev.toml
+panarchybot.toml
 
 # dist
 dist

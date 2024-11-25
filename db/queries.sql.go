@@ -9,6 +9,24 @@ import (
 	"context"
 )
 
+const createAccount = `-- name: CreateAccount :one
+INSERT INTO accounts (user_id, address, seed, created_at)
+  VALUES ($1, $2, $3, now()) RETURNING id
+`
+
+type CreateAccountParams struct {
+	UserID  int64
+	Address string
+	Seed    string
+}
+
+func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createAccount, arg.UserID, arg.Address, arg.Seed)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createState = `-- name: CreateState :exec
 INSERT INTO states (user_id, state, data, meta, created_at)
   VALUES ($1, $2, $3, $4, now())
@@ -29,6 +47,25 @@ func (q *Queries) CreateState(ctx context.Context, arg CreateStateParams) error 
 		arg.Meta,
 	)
 	return err
+}
+
+const getAccount = `-- name: GetAccount :one
+SELECT id, user_id, address, seed, created_at FROM accounts
+WHERE user_id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetAccount(ctx context.Context, userID int64) (Account, error) {
+	row := q.db.QueryRow(ctx, getAccount, userID)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Address,
+		&i.Seed,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getState = `-- name: GetState :one

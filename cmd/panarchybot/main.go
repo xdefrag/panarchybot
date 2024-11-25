@@ -7,10 +7,13 @@ import (
 	"os/signal"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/xdefrag/panarchybot/chatgpt"
+	"github.com/xdefrag/panarchybot/config"
+	"github.com/xdefrag/panarchybot/db"
 	"github.com/xdefrag/panarchybot/tgbot"
 )
 
@@ -24,6 +27,12 @@ func main() {
 		Level: slog.LevelDebug,
 	})).With("commit", Commit)
 
+	cfg, err := config.Get()
+	if err != nil {
+		l.ErrorContext(ctx, err.Error())
+		os.Exit(1)
+	}
+
 	if err := godotenv.Load(); err != nil {
 		l.ErrorContext(ctx, err.Error())
 		os.Exit(1)
@@ -31,7 +40,7 @@ func main() {
 
 	gpt := chatgpt.New(openai.NewClient(
 		option.WithAPIKey(os.Getenv("OPENAI_API_KEY")),
-	))
+	), cfg)
 
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_TOKEN"))
 	if err != nil {
@@ -39,7 +48,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	tgbot := tgbot.New(l, nil, bot, gpt)
+	pg, err := pgx.Connect(ctx, os.Getenv("POSTGRES_DSN"))
+	if err != nil {
+		l.ErrorContext(ctx, err.Error())
+		os.Exit(1)
+	}
+
+	tgbot := tgbot.New(l, cfg, db.New(pg), bot, gpt)
 
 	tgbot.Run(ctx) // blocking
 }

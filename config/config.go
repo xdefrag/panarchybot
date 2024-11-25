@@ -13,6 +13,18 @@ type Config struct {
 		Model    string `toml:"model"`
 		Question string `toml:"question"`
 	} `toml:"open_ai"`
+	Stellar struct {
+		FundAccount struct {
+			Address       string `toml:"address"`
+			Seed          string `toml:"seed"`
+			DefaultAmount string `toml:"default_amount"`
+			BaseFee       int64  `toml:"base_fee"`
+			Passphrase    string `toml:"passphrase"`
+			Memo          string `toml:"memo"`
+			AssetCode     string `toml:"asset_code"`
+			AssetIssuer   string `toml:"asset_issuer"`
+		} `toml:"fund_account"`
+	} `toml:"stellar"`
 	Telegram struct {
 		FollowUp struct {
 			Message string `toml:"message"`

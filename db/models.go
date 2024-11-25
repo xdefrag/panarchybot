@@ -8,6 +8,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Account struct {
+	ID        int64
+	UserID    int64
+	Address   string
+	Seed      string
+	CreatedAt pgtype.Timestamptz
+}
+
 type State struct {
 	UserID    int64
 	State     string

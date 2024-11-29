@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stellar/go/clients/horizonclient"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/network"
@@ -30,15 +29,34 @@ func TestCreateAccount(t *testing.T) {
 	cfg.Stellar.FundAccount.AssetIssuer = pair.Address()
 	cfg.Stellar.FundAccount.BaseFee = 1000
 	cfg.Stellar.FundAccount.DefaultAmount = "2"
+	cfg.Stellar.FundAccount.DefaultAirdrop = "2"
 	cfg.Stellar.FundAccount.Passphrase = network.TestNetworkPassphrase
 	cfg.Stellar.FundAccount.Memo = "panarchynow.t.me"
 
 	l := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
 	s := stellar.New(cl, cfg, l)
-	res, err := s.CreateAccount(ctx, "1000")
+	res, err := s.CreateAccount(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, res)
+}
 
-	spew.Dump(res)
+func TestGetBalance(t *testing.T) {
+	ctx := context.Background()
+	cl := horizonclient.DefaultTestNetClient
+
+	pair := keypair.MustRandom()
+	_, err := cl.Fund(pair.Address())
+	require.NoError(t, err)
+
+	cfg := &config.Config{}
+	cfg.Stellar.FundAccount.AssetCode = "TEST"
+	cfg.Stellar.FundAccount.AssetIssuer = pair.Address()
+
+	l := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
+
+	s := stellar.New(cl, cfg, l)
+	res, err := s.GetBalance(ctx, pair.Address())
+	require.NoError(t, err)
+	require.NotNil(t, res)
 }

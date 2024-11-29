@@ -12,14 +12,16 @@ import (
 	"github.com/xdefrag/panarchybot/chatgpt"
 	"github.com/xdefrag/panarchybot/config"
 	"github.com/xdefrag/panarchybot/db"
+	"github.com/xdefrag/panarchybot/stellar"
 )
 
 type TGBot struct {
-	l   *slog.Logger
-	cfg *config.Config
-	q   *db.Queries
-	bot *tgbotapi.BotAPI
-	gpt *chatgpt.ChatGPT
+	l       *slog.Logger
+	cfg     *config.Config
+	q       *db.Queries
+	bot     *tgbotapi.BotAPI
+	gpt     *chatgpt.ChatGPT
+	stellar *stellar.Stellar
 }
 
 func (t *TGBot) Run(ctx context.Context) {
@@ -143,12 +145,14 @@ func New(
 	q *db.Queries,
 	bot *tgbotapi.BotAPI,
 	gpt *chatgpt.ChatGPT,
+	stellar *stellar.Stellar,
 ) *TGBot {
 	return &TGBot{
-		l:   l,
-		cfg: cfg,
-		q:   q,
-		bot: bot,
-		gpt: gpt,
+		l:       l,
+		cfg:     cfg,
+		q:       q,
+		bot:     bot,
+		gpt:     gpt,
+		stellar: stellar,
 	}
 }

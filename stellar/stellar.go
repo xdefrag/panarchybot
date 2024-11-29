@@ -16,7 +16,7 @@ type Stellar struct {
 	l   *slog.Logger
 }
 
-func (s *Stellar) CreateAccount(ctx context.Context, amount string) (*keypair.Full, error) {
+func (s *Stellar) CreateAccount(ctx context.Context) (*keypair.Full, error) {
 	pair := keypair.MustRandom()
 	pairMain, err := keypair.ParseFull(s.cfg.Stellar.FundAccount.Seed)
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *Stellar) CreateAccount(ctx context.Context, amount string) (*keypair.Fu
 			},
 			&txnbuild.Payment{
 				Destination:   pair.Address(),
-				Amount:        amount,
+				Amount:        s.cfg.Stellar.FundAccount.DefaultAirdrop,
 				Asset:         asset,
 				SourceAccount: pairMain.Address(),
 			},
@@ -85,6 +85,21 @@ func (s *Stellar) CreateAccount(ctx context.Context, amount string) (*keypair.Fu
 	l.InfoContext(ctx, "transaction submitted")
 
 	return pair, nil
+}
+
+func (s *Stellar) GetBalance(ctx context.Context, address string) (string, error) {
+	page, err := s.cl.Accounts(horizonclient.AccountsRequest{
+		Signer: address,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if len(page.Embedded.Records) == 0 {
+		return "", nil
+	}
+
+	return page.Embedded.Records[0].GetCreditBalance(s.cfg.Stellar.FundAccount.AssetCode, s.cfg.Stellar.FundAccount.AssetIssuer), nil
 }
 
 func New(cl horizonclient.ClientInterface, cfg *config.Config, l *slog.Logger) *Stellar {

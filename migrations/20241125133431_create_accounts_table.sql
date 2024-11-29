@@ -10,6 +10,9 @@ CREATE TABLE accounts (
 
 CREATE INDEX idx_accounts_user_id
 ON accounts (user_id);
+
+CREATE UNIQUE INDEX idx_accounts_user_id_address
+on accounts (user_id, address);
 -- +goose StatementEnd
 
 -- +goose Down

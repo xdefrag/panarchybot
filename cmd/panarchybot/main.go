@@ -11,9 +11,11 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	"github.com/stellar/go/clients/horizonclient"
 	"github.com/xdefrag/panarchybot/chatgpt"
 	"github.com/xdefrag/panarchybot/config"
 	"github.com/xdefrag/panarchybot/db"
+	"github.com/xdefrag/panarchybot/stellar"
 	"github.com/xdefrag/panarchybot/tgbot"
 )
 
@@ -54,7 +56,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	tgbot := tgbot.New(l, cfg, db.New(pg), bot, gpt)
+	st := stellar.New(horizonclient.DefaultPublicNetClient, cfg, l)
+
+	tgbot := tgbot.New(l, cfg, db.New(pg), bot, gpt, st)
 
 	tgbot.Run(ctx) // blocking
 }

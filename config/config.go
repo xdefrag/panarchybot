@@ -15,14 +15,15 @@ type Config struct {
 	} `toml:"open_ai"`
 	Stellar struct {
 		FundAccount struct {
-			Address       string `toml:"address"`
-			Seed          string `toml:"seed"`
-			DefaultAmount string `toml:"default_amount"`
-			BaseFee       int64  `toml:"base_fee"`
-			Passphrase    string `toml:"passphrase"`
-			Memo          string `toml:"memo"`
-			AssetCode     string `toml:"asset_code"`
-			AssetIssuer   string `toml:"asset_issuer"`
+			Address        string `toml:"address"`
+			Seed           string `toml:"seed"`
+			DefaultAmount  string `toml:"default_amount"`
+			DefaultAirdrop string `toml:"default_airdrop"`
+			Passphrase     string `toml:"passphrase"`
+			Memo           string `toml:"memo"`
+			AssetCode      string `toml:"asset_code"`
+			AssetIssuer    string `toml:"asset_issuer"`
+			BaseFee        int64  `toml:"base_fee"`
 		} `toml:"fund_account"`
 	} `toml:"stellar"`
 	Telegram struct {

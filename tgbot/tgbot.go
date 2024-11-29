@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -60,7 +61,27 @@ func (t *TGBot) handle(ctx context.Context, upd tgbotapi.Update) error {
 }
 
 func (t *TGBot) handleMainChannel(ctx context.Context, upd tgbotapi.Update) error {
-	q, err := t.gpt.MakeQuestion(ctx, upd.Message.Text)
+	text := upd.Message.Text
+
+	if text == "" && upd.Message.Poll != nil {
+		poll := &strings.Builder{}
+		poll.WriteString("Опрос: ")
+		poll.WriteString(upd.Message.Poll.Question)
+		poll.WriteString("\n")
+		for i, option := range upd.Message.Poll.Options {
+			poll.WriteString(strconv.Itoa(i + 1))
+			poll.WriteString(". ")
+			poll.WriteString(option.Text)
+			poll.WriteString("\n")
+		}
+		text = poll.String()
+	}
+
+	if text == "" {
+		return nil
+	}
+
+	q, err := t.gpt.MakeQuestion(ctx, text)
 	if err != nil {
 		return err
 	}

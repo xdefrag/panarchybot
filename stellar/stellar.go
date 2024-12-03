@@ -2,7 +2,9 @@ package stellar
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/stellar/go/clients/horizonclient"
 	"github.com/stellar/go/keypair"
@@ -17,6 +19,30 @@ type Stellar struct {
 }
 
 func (s *Stellar) CreateAccount(ctx context.Context) (*keypair.Full, error) {
+	l := s.l.WithGroup("stellar").With(
+		slog.String("distributor", s.cfg.Stellar.FundAccount.Address),
+		slog.String("asset_code", s.cfg.Stellar.FundAccount.AssetCode),
+		slog.String("asset_issuer", s.cfg.Stellar.FundAccount.AssetIssuer),
+	)
+
+	pair, err := s.createAccount(ctx)
+	if err != nil {
+		details := &strings.Builder{}
+		if p := horizonclient.GetError(err); p != nil {
+			fmt.Fprintf(details, "status: %d, type: %s, title: %s, detail: %s",
+				p.Problem.Status, p.Problem.Type, p.Problem.Title, p.Problem.Detail)
+		}
+		l.ErrorContext(ctx, "failed to submit transaction",
+			slog.String("error", err.Error()),
+			"details", details.String())
+		return nil, err
+	}
+	l.InfoContext(ctx, "transaction submitted")
+
+	return pair, nil
+}
+
+func (s *Stellar) createAccount(_ context.Context) (*keypair.Full, error) {
 	pair := keypair.MustRandom()
 	pairMain, err := keypair.ParseFull(s.cfg.Stellar.FundAccount.Seed)
 	if err != nil {
@@ -27,14 +53,6 @@ func (s *Stellar) CreateAccount(ctx context.Context) (*keypair.Full, error) {
 		Code:   s.cfg.Stellar.FundAccount.AssetCode,
 		Issuer: s.cfg.Stellar.FundAccount.AssetIssuer,
 	}
-
-	l := s.l.WithGroup("stellar").With(
-		slog.String("account", pair.Address()),
-		slog.String("distributor", pairMain.Address()),
-		slog.String("asset_code", s.cfg.Stellar.FundAccount.AssetCode),
-		slog.String("asset_issuer", s.cfg.Stellar.FundAccount.AssetIssuer),
-	)
-
 	mainAccountDetails, err := s.cl.AccountDetail(horizonclient.AccountRequest{
 		AccountID: pairMain.Address(),
 	})
@@ -79,10 +97,8 @@ func (s *Stellar) CreateAccount(ctx context.Context) (*keypair.Full, error) {
 
 	_, err = s.cl.SubmitTransaction(tx)
 	if err != nil {
-		l.ErrorContext(ctx, "failed to submit transaction", slog.String("error", err.Error()))
 		return nil, err
 	}
-	l.InfoContext(ctx, "transaction submitted")
 
 	return pair, nil
 }

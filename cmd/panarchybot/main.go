@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jackc/pgx/v5"
@@ -40,6 +41,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	if cfg.Stellar.FundAccount.Seed == "" {
+		cfg.Stellar.FundAccount.Seed = os.Getenv("FUND_SEED")
+	}
+
 	gpt := chatgpt.New(openai.NewClient(
 		option.WithAPIKey(os.Getenv("OPENAI_API_KEY")),
 	), cfg)
@@ -56,7 +61,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	st := stellar.New(horizonclient.DefaultPublicNetClient, cfg, l)
+	horizonClient := horizonclient.DefaultPublicNetClient
+	if strings.Contains(cfg.Stellar.FundAccount.Passphrase, "Test") {
+		horizonClient = horizonclient.DefaultTestNetClient
+	}
+
+	st := stellar.New(horizonClient, cfg, l)
 
 	tgbot := tgbot.New(l, cfg, db.New(pg), bot, gpt, st)
 

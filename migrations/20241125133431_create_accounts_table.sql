@@ -8,11 +8,8 @@ CREATE TABLE accounts (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
-CREATE INDEX idx_accounts_user_id
+CREATE UNIQUE INDEX idx_accounts_user_id
 ON accounts (user_id);
-
-CREATE UNIQUE INDEX idx_accounts_user_id_address
-on accounts (user_id, address);
 -- +goose StatementEnd
 
 -- +goose Down

@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/xdefrag/panarchybot/chatgpt"
@@ -35,8 +34,16 @@ func (t *TGBot) Run(ctx context.Context) {
 		t.privateHandlerWrapper(t.callbackSendPrivateHandler))
 	t.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, "send_confirm", bot.MatchTypeExact,
 		t.privateHandlerWrapper(t.callbackSendConfirmPrivateHandler))
-	t.bot.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains,
-		t.privateHandlerWrapper(t.messagePrivateHandler))
+
+	t.bot.RegisterHandlerMatchFunc(func(upd *models.Update) bool {
+		return upd.Message != nil && upd.Message.Chat.Type == models.ChatTypePrivate
+	}, t.privateHandlerWrapper(t.messagePrivateHandler))
+
+	t.bot.RegisterHandlerMatchFunc(func(upd *models.Update) bool {
+		return upd.Message != nil && upd.Message.ForwardOrigin != nil &&
+			upd.Message.ForwardOrigin.MessageOriginChannel != nil &&
+			upd.Message.ForwardOrigin.MessageOriginChannel.Chat.ID == t.cfg.Telegram.MainChannelID
+	}, t.groupHandlerWrapper(t.messageGroupHandler))
 
 	t.bot.Start(ctx)
 }
@@ -59,16 +66,12 @@ func (t *TGBot) privateHandlerWrapper(next func(ctx context.Context, state db.St
 		if err := next(ctx, st, upd); err != nil {
 			l.ErrorContext(ctx, "failed to handle message",
 				slog.String("error", err.Error()),
-				slog.String("state", st.State),
-				slog.String("data", spew.Sdump(st.Data)),
-			)
+				slog.String("state", st.State))
 			return
 		}
 
 		l.DebugContext(ctx, "message handled",
-			slog.String("state", st.State),
-			slog.String("data", spew.Sdump(st.Data)),
-		)
+			slog.String("state", st.State))
 	}
 }
 

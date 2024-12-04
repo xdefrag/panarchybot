@@ -10,18 +10,24 @@ import (
 )
 
 const createAccount = `-- name: CreateAccount :one
-INSERT INTO accounts (user_id, address, seed, created_at)
-  VALUES ($1, $2, $3, now()) RETURNING id
+INSERT INTO accounts (user_id, username, address, seed, created_at)
+  VALUES ($1, $2, $3, $4, now()) RETURNING id
 `
 
 type CreateAccountParams struct {
-	UserID  int64
-	Address string
-	Seed    string
+	UserID   int64
+	Username string
+	Address  string
+	Seed     string
 }
 
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (int64, error) {
-	row := q.db.QueryRow(ctx, createAccount, arg.UserID, arg.Address, arg.Seed)
+	row := q.db.QueryRow(ctx, createAccount,
+		arg.UserID,
+		arg.Username,
+		arg.Address,
+		arg.Seed,
+	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -50,7 +56,7 @@ func (q *Queries) CreateState(ctx context.Context, arg CreateStateParams) error 
 }
 
 const getAccount = `-- name: GetAccount :one
-SELECT id, user_id, address, seed, created_at FROM accounts
+SELECT id, user_id, username, address, seed, created_at FROM accounts
 WHERE user_id = $1
 LIMIT 1
 `
@@ -61,6 +67,26 @@ func (q *Queries) GetAccount(ctx context.Context, userID int64) (Account, error)
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
+		&i.Username,
+		&i.Address,
+		&i.Seed,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getAccountByKey = `-- name: GetAccountByKey :one
+SELECT id, user_id, username, address, seed, created_at FROM accounts
+WHERE username = $1 or address = $1
+`
+
+func (q *Queries) GetAccountByKey(ctx context.Context, key string) (Account, error) {
+	row := q.db.QueryRow(ctx, getAccountByKey, key)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Username,
 		&i.Address,
 		&i.Seed,
 		&i.CreatedAt,
@@ -86,4 +112,20 @@ func (q *Queries) GetState(ctx context.Context, userID int64) (State, error) {
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const updateStateData = `-- name: UpdateStateData :exec
+UPDATE states
+SET data = $1
+WHERE user_id = $2
+`
+
+type UpdateStateDataParams struct {
+	Data   map[string]interface{}
+	UserID int64
+}
+
+func (q *Queries) UpdateStateData(ctx context.Context, arg UpdateStateDataParams) error {
+	_, err := q.db.Exec(ctx, updateStateData, arg.Data, arg.UserID)
+	return err
 }

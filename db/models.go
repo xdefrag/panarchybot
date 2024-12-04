@@ -11,6 +11,7 @@ import (
 type Account struct {
 	ID        int64
 	UserID    int64
+	Username  string
 	Address   string
 	Seed      string
 	CreatedAt pgtype.Timestamptz

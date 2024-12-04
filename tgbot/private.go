@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/looplab/fsm"
@@ -20,12 +21,15 @@ const (
 	stateSendConfirm = "state_send_confirm"
 	stateSuggest     = "state_suggest"
 
-	eventStart     = "/start"
-	eventRegister  = "/register"
-	eventSuggest   = "/suggest"
-	eventSuggested = "/suggested"
-	eventSend      = "/send"
-	eventGet       = "/get"
+	eventStart       = "/start"
+	eventRegister    = "/register"
+	eventSuggest     = "/suggest"
+	eventSuggested   = "/suggested"
+	eventSend        = "/send"
+	eventSendTo      = "/send_to"
+	eventSendAmount  = "/send_amount"
+	eventSendConfirm = "/send_confirm"
+	eventGet         = "/get"
 
 	buttonRegister = "📝 Регистрация"
 	buttonStart    = "💰 Баланс"
@@ -56,14 +60,25 @@ var buttonsStartNewbie = tgbotapi.NewReplyKeyboard(
 	),
 )
 
+var waitForInputState = map[string]string{
+	stateSuggest:     eventSuggested,
+	stateSendTo:      eventSendTo,
+	stateSendAmount:  eventSendAmount,
+	stateSendConfirm: eventSendConfirm,
+}
+
 func (t *TGBot) getSM() *fsm.FSM {
 	return fsm.NewFSM(
 		stateInit,
 		fsm.Events{
-			{Name: eventStart, Src: []string{stateInit, stateStart}, Dst: stateStart},
+			{Name: eventStart, Src: []string{stateInit, stateStart, stateSendConfirm}, Dst: stateStart},
+			{Name: eventRegister, Src: []string{stateStart}, Dst: stateStart},
 			{Name: eventSuggest, Src: []string{stateStart}, Dst: stateSuggest},
 			{Name: eventSuggested, Src: []string{stateSuggest}, Dst: stateStart},
-			{Name: eventRegister, Src: []string{stateStart}, Dst: stateStart},
+			{Name: eventSend, Src: []string{stateStart}, Dst: stateSendTo},
+			{Name: eventSendTo, Src: []string{stateSendTo}, Dst: stateSendAmount},
+			{Name: eventSendAmount, Src: []string{stateSendAmount}, Dst: stateSendConfirm},
+			{Name: eventSendConfirm, Src: []string{stateSendConfirm}, Dst: stateStart},
 		},
 		fsm.Callbacks{
 			"before_event": func(ctx context.Context, e *fsm.Event) {
@@ -121,9 +136,10 @@ func (t *TGBot) getSM() *fsm.FSM {
 				}
 
 				num, err := t.q.CreateAccount(ctx, db.CreateAccountParams{
-					UserID:  st.UserID,
-					Address: pair.Address(),
-					Seed:    pair.Seed(),
+					UserID:   st.UserID,
+					Username: st.Data["username"].(string),
+					Address:  pair.Address(),
+					Seed:     pair.Seed(),
 				})
 				if err != nil {
 					e.Cancel(err)
@@ -158,6 +174,108 @@ func (t *TGBot) getSM() *fsm.FSM {
 				}
 
 				msg := tgbotapi.NewMessage(st.UserID, t.cfg.Telegram.Suggest.SuggestedMessage)
+				msg.ReplyMarkup = buttonsStart
+				if _, err := t.bot.Send(msg); err != nil {
+					e.Cancel(err)
+					return
+				}
+			},
+			eventSend: func(ctx context.Context, e *fsm.Event) {
+				st := e.Args[0].(db.State)
+				msg := tgbotapi.NewMessage(st.UserID, textSend)
+				msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
+				if _, err := t.bot.Send(msg); err != nil {
+					e.Cancel(err)
+					return
+				}
+			},
+			eventSendTo: func(ctx context.Context, e *fsm.Event) {
+				spew.Dump(e.Args)
+
+				st := e.Args[0].(db.State)
+				key := e.Args[1].(string)
+
+				if _, err := t.q.GetAccountByKey(ctx, key); err != nil {
+					msg := tgbotapi.NewMessage(st.UserID, textSendToNotFount)
+					msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
+					if _, err := t.bot.Send(msg); err != nil {
+						e.Cancel(err)
+						return
+					}
+					e.Cancel(err)
+					return
+				}
+
+				st.Data["send_to"] = key
+
+				if err := t.q.UpdateStateData(ctx, db.UpdateStateDataParams{
+					Data:   st.Data,
+					UserID: st.UserID,
+				}); err != nil {
+					e.Cancel(err)
+					return
+				}
+
+				msg := tgbotapi.NewMessage(st.UserID, textSendAmount)
+				msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
+				if _, err := t.bot.Send(msg); err != nil {
+					e.Cancel(err)
+					return
+				}
+			},
+			eventSendAmount: func(ctx context.Context, e *fsm.Event) {
+				st := e.Args[0].(db.State)
+				amount, ok := e.Args[1].(string)
+				if !ok {
+					e.Cancel(errors.New("invalid amount"))
+					return
+				}
+
+				st.Data["send_amount"] = amount
+
+				// TODO: check if amount is valid
+
+				if err := t.q.UpdateStateData(ctx, db.UpdateStateDataParams{
+					Data:   st.Data,
+					UserID: st.UserID,
+				}); err != nil {
+					e.Cancel(err)
+					return
+				}
+
+				msg := tgbotapi.NewMessage(st.UserID, fmt.Sprintf(textSendSummary, st.Data["send_to"], amount))
+				msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
+				if _, err := t.bot.Send(msg); err != nil {
+					e.Cancel(err)
+					return
+				}
+			},
+			eventSendConfirm: func(ctx context.Context, e *fsm.Event) {
+				st := e.Args[0].(db.State)
+
+				acc, err := t.q.GetAccount(ctx, st.UserID)
+				if err != nil {
+					e.Cancel(err)
+					return
+				}
+
+				if err := t.stellar.Send(ctx, acc.Seed, st.Data["send_to"].(string), st.Data["send_amount"].(string)); err != nil {
+					e.Cancel(err)
+					return
+				}
+
+				delete(st.Data, "send_to")
+				delete(st.Data, "send_amount")
+
+				if err := t.q.UpdateStateData(ctx, db.UpdateStateDataParams{
+					Data:   st.Data,
+					UserID: st.UserID,
+				}); err != nil {
+					e.Cancel(err)
+					return
+				}
+
+				msg := tgbotapi.NewMessage(st.UserID, textSendSuccess)
 				msg.ReplyMarkup = buttonsStart
 				if _, err := t.bot.Send(msg); err != nil {
 					e.Cancel(err)

@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/go-telegram/bot"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go"
@@ -49,7 +49,7 @@ func main() {
 		option.WithAPIKey(os.Getenv("OPENAI_API_KEY")),
 	), cfg)
 
-	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_TOKEN"))
+	bot, err := bot.New(os.Getenv("TELEGRAM_TOKEN"))
 	if err != nil {
 		l.ErrorContext(ctx, err.Error())
 		os.Exit(1)
@@ -68,7 +68,7 @@ func main() {
 
 	st := stellar.New(horizonClient, cfg, l)
 
-	tgbot := tgbot.New(l, cfg, db.New(pg), bot, gpt, st)
+	tgbot := tgbot.New(cfg, db.New(pg), bot, st, gpt, l)
 
-	tgbot.Run(ctx) // blocking
+	tgbot.Run(ctx) // blocks
 }

@@ -24,4 +24,4 @@ INSERT INTO accounts (user_id, username, address, seed, created_at)
 
 -- name: GetAccountByKey :one
 SELECT * FROM accounts
-WHERE username = @key or address = @key;
+WHERE username = @key OR address = @key;

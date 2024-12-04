@@ -8,10 +8,10 @@ import (
 	"github.com/stellar/go/txnbuild"
 )
 
-func (c *Stellar) Send(ctx context.Context, fromSeed, toAddress, amount string) error {
+func (c *Stellar) Send(ctx context.Context, fromSeed, toAddress, amount string) (string, error) {
 	fromPair, err := keypair.ParseFull(fromSeed)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	asset := &txnbuild.CreditAsset{
@@ -23,7 +23,7 @@ func (c *Stellar) Send(ctx context.Context, fromSeed, toAddress, amount string) 
 		AccountID: fromPair.Address(),
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	tx, err := txnbuild.NewTransaction(txnbuild.TransactionParams{
@@ -44,18 +44,18 @@ func (c *Stellar) Send(ctx context.Context, fromSeed, toAddress, amount string) 
 		Memo:    txnbuild.MemoText("live and let live"),
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	tx, err = tx.Sign(c.cfg.Stellar.FundAccount.Passphrase, fromPair)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	_, err = c.cl.SubmitTransaction(tx)
+	txr, err := c.cl.SubmitTransaction(tx)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return txr.Hash, nil
 }

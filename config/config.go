@@ -19,6 +19,7 @@ type Config struct {
 			Seed           string `toml:"seed"`
 			DefaultAmount  string `toml:"default_amount"`
 			DefaultAirdrop string `toml:"default_airdrop"`
+			Network        string `toml:"network"`
 			Passphrase     string `toml:"passphrase"`
 			Memo           string `toml:"memo"`
 			AssetCode      string `toml:"asset_code"`
@@ -31,10 +32,6 @@ type Config struct {
 			Message string `toml:"message"`
 			URL     string `toml:"url"`
 		} `toml:"follow_up"`
-		Suggest struct {
-			SuggestMessage   string `toml:"suggest_message"`
-			SuggestedMessage string `toml:"suggested_message"`
-		} `toml:"suggest"`
 		MainChannelID int64 `toml:"main_channel_id"`
 		SuggestChatID int64 `toml:"suggest_chat_id"`
 	} `toml:"telegram"`

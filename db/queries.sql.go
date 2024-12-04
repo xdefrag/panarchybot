@@ -77,7 +77,7 @@ func (q *Queries) GetAccount(ctx context.Context, userID int64) (Account, error)
 
 const getAccountByKey = `-- name: GetAccountByKey :one
 SELECT id, user_id, username, address, seed, created_at FROM accounts
-WHERE username = $1 or address = $1
+WHERE username = $1 OR address = $1
 `
 
 func (q *Queries) GetAccountByKey(ctx context.Context, key string) (Account, error) {

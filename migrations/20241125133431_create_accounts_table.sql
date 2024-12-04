@@ -3,6 +3,7 @@
 CREATE TABLE accounts (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NOT NULL,
+  username TEXT NOT NULL,
   address TEXT NOT NULL,
   seed TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL

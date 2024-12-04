@@ -120,7 +120,7 @@ func (t *TGBot) handlePrivate(ctx context.Context, upd tgbotapi.Update) error {
 
 	st.Data["message"] = upd.Message.Text
 	st.Data["message_id"] = upd.Message.MessageID
-	st.Meta["username"] = upd.Message.From.UserName
+	st.Data["username"] = upd.Message.From.UserName
 	st.Meta["firstname"] = upd.Message.From.FirstName
 	st.Meta["lastname"] = upd.Message.From.LastName
 	st.Meta["chat_type"] = upd.Message.Chat.Type
@@ -129,8 +129,10 @@ func (t *TGBot) handlePrivate(ctx context.Context, upd tgbotapi.Update) error {
 
 	ev, args := prepareEventAndArgs(upd.Message.Text, st)
 
-	if sm.Is(stateSuggest) {
-		ev = eventSuggested
+	nextEv, ok := waitForInputState[sm.Current()]
+	if ok {
+		ev = nextEv
+		args = append(args, ev)
 	}
 
 	if trueEvent, ok := mapButtonEvent[ev]; ok {

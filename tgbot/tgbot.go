@@ -67,6 +67,13 @@ func (t *TGBot) privateHandlerWrapper(next func(ctx context.Context, state db.St
 			l.ErrorContext(ctx, "failed to handle message",
 				slog.String("error", err.Error()),
 				slog.String("state", st.State))
+
+			_, _ = t.bot.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: st.UserID,
+				Text:   "Что-то пошло не так, попробуйте еще раз",
+			})
+
+			_ = t.startPrivateHandler(ctx, st, upd)
 			return
 		}
 

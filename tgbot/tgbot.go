@@ -50,6 +50,10 @@ func (t *TGBot) Run(ctx context.Context) {
 
 func (t *TGBot) privateHandlerWrapper(next func(ctx context.Context, state db.State, upd *models.Update) error) bot.HandlerFunc {
 	return func(ctx context.Context, b *bot.Bot, upd *models.Update) {
+		if !t.cfg.Telegram.Private.Enable {
+			return
+		}
+
 		user := getUser(upd)
 
 		l := t.l.With(

@@ -34,6 +34,9 @@ type Config struct {
 		} `toml:"follow_up"`
 		MainChannelID int64 `toml:"main_channel_id"`
 		SuggestChatID int64 `toml:"suggest_chat_id"`
+		Private       struct {
+			Enable bool `toml:"enable"`
+		} `toml:"private"`
 	} `toml:"telegram"`
 }
 

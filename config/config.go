@@ -15,6 +15,11 @@ type Config struct {
 	} `toml:"open_ai"`
 	Stellar struct {
 		FundAccount struct {
+			Airdrop struct {
+				ByUsernameAmount map[string]string `toml:"by_username_amount"`
+				IDLessThanAmount map[string]string `toml:"id_less_than_amount"`
+				Enable           bool              `toml:"enable"`
+			} `toml:"airdrop"`
 			Address        string `toml:"address"`
 			Seed           string `toml:"seed"`
 			DefaultAmount  string `toml:"default_amount"`

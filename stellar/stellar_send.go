@@ -8,7 +8,26 @@ import (
 	"github.com/stellar/go/txnbuild"
 )
 
-func (c *Stellar) Send(ctx context.Context, fromSeed, toAddress, amount string) (string, error) {
+type SendOptions struct {
+	Memo string
+}
+
+type SendOption func(*SendOptions)
+
+func WithMemo(memo string) SendOption {
+	return func(o *SendOptions) {
+		o.Memo = memo
+	}
+}
+
+func (c *Stellar) Send(ctx context.Context, fromSeed, toAddress, amount string, opts ...SendOption) (string, error) {
+	options := &SendOptions{
+		Memo: "live and let live",
+	}
+	for _, o := range opts {
+		o(options)
+	}
+
 	fromPair, err := keypair.ParseFull(fromSeed)
 	if err != nil {
 		return "", err
@@ -41,7 +60,7 @@ func (c *Stellar) Send(ctx context.Context, fromSeed, toAddress, amount string) 
 			TimeBounds: txnbuild.NewInfiniteTimeout(),
 		},
 		BaseFee: c.cfg.Stellar.FundAccount.BaseFee,
-		Memo:    txnbuild.MemoText("live and let live"),
+		Memo:    txnbuild.MemoText(options.Memo),
 	})
 	if err != nil {
 		return "", err

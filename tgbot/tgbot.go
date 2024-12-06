@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"github.com/xdefrag/panarchybot/campaign"
 	"github.com/xdefrag/panarchybot/chatgpt"
 	"github.com/xdefrag/panarchybot/config"
 	"github.com/xdefrag/panarchybot/db"
@@ -14,12 +15,13 @@ import (
 )
 
 type TGBot struct {
-	cfg     *config.Config
-	q       *db.Queries
-	bot     *bot.Bot
-	stellar *stellar.Stellar
-	gpt     *chatgpt.ChatGPT
-	l       *slog.Logger
+	cfg      *config.Config
+	q        *db.Queries
+	bot      *bot.Bot
+	stellar  *stellar.Stellar
+	gpt      *chatgpt.ChatGPT
+	campaign *campaign.Campaign
+	l        *slog.Logger
 }
 
 func (t *TGBot) Run(ctx context.Context) {
@@ -110,14 +112,16 @@ func New(
 	b *bot.Bot,
 	s *stellar.Stellar,
 	gpt *chatgpt.ChatGPT,
+	campaign *campaign.Campaign,
 	l *slog.Logger,
 ) *TGBot {
 	return &TGBot{
-		cfg:     cfg,
-		bot:     b,
-		q:       q,
-		stellar: s,
-		gpt:     gpt,
-		l:       l,
+		cfg:      cfg,
+		bot:      b,
+		q:        q,
+		stellar:  s,
+		gpt:      gpt,
+		campaign: campaign,
+		l:        l,
 	}
 }

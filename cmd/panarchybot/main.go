@@ -13,6 +13,7 @@ import (
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/stellar/go/clients/horizonclient"
+	"github.com/xdefrag/panarchybot/campaign"
 	"github.com/xdefrag/panarchybot/chatgpt"
 	"github.com/xdefrag/panarchybot/config"
 	"github.com/xdefrag/panarchybot/db"
@@ -68,7 +69,9 @@ func main() {
 
 	st := stellar.New(horizonClient, cfg, l)
 
-	tgbot := tgbot.New(cfg, db.New(pg), bot, st, gpt, l)
+	camp := campaign.New(cfg)
+
+	tgbot := tgbot.New(cfg, db.New(pg), bot, st, gpt, camp, l)
 
 	tgbot.Run(ctx) // blocks
 }

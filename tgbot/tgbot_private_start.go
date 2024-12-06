@@ -4,13 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/samber/lo"
+	"github.com/xdefrag/panarchybot/campaign"
 	"github.com/xdefrag/panarchybot/db"
+	"github.com/xdefrag/panarchybot/stellar"
 )
 
 var startKeyboard = &models.InlineKeyboardMarkup{
@@ -152,14 +155,48 @@ func (t *TGBot) registerPrivateHandler(ctx context.Context, st db.State, upd *mo
 		return err
 	}
 
-	num, err := t.q.CreateAccount(ctx, db.CreateAccountParams{
+	id, err := t.q.CreateAccount(ctx, db.CreateAccountParams{
 		UserID:   st.UserID,
 		Username: st.Data["username"].(string),
 		Address:  pair.Address(),
 		Seed:     pair.Seed(),
 	})
 
-	_ = num // TODO aurdrop
+	airdrop, err := t.campaign.Airdrop(ctx, campaign.AirdropParams{
+		Username: st.Data["username"].(string),
+		UserID:   st.UserID,
+		ID:       id,
+	})
+	if err != nil {
+		return err
+	}
+
+	if airdrop.Amount != "" {
+		_, err = t.stellar.Send(
+			ctx,
+			t.cfg.Stellar.FundAccount.Seed,
+			pair.Address(),
+			airdrop.Amount,
+			stellar.WithMemo(airdrop.Memo),
+		)
+		if err != nil {
+			t.l.ErrorContext(ctx, "failed to send airdrop",
+				slog.String("error", err.Error()),
+				slog.Int64("user_id", st.UserID),
+				slog.String("username", st.Data["username"].(string)),
+				slog.Int64("update_id", upd.ID))
+		}
+
+		if err == nil {
+			_, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: st.UserID,
+				Text:   airdrop.Text,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	return t.startPrivateHandler(ctx, st, upd)
 }

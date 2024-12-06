@@ -28,15 +28,14 @@ type Config struct {
 		} `toml:"fund_account"`
 	} `toml:"stellar"`
 	Telegram struct {
-		FollowUp struct {
-			Message string `toml:"message"`
-			URL     string `toml:"url"`
-		} `toml:"follow_up"`
 		MainChannelID int64 `toml:"main_channel_id"`
 		SuggestChatID int64 `toml:"suggest_chat_id"`
 		Private       struct {
 			Enable bool `toml:"enable"`
 		} `toml:"private"`
+		Thanks struct {
+			Enable bool `toml:"enable"`
+		} `toml:"thanks"`
 	} `toml:"telegram"`
 }
 

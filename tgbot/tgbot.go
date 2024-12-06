@@ -3,6 +3,7 @@ package tgbot
 import (
 	"context"
 	"log/slog"
+	"strings"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -44,6 +45,11 @@ func (t *TGBot) Run(ctx context.Context) {
 			upd.Message.ForwardOrigin.MessageOriginChannel != nil &&
 			upd.Message.ForwardOrigin.MessageOriginChannel.Chat.ID == t.cfg.Telegram.MainChannelID
 	}, t.groupHandlerWrapper(t.messageGroupHandler))
+
+	t.bot.RegisterHandlerMatchFunc(func(upd *models.Update) bool {
+		return upd.Message != nil && upd.Message.ReplyToMessage != nil &&
+			strings.HasPrefix(upd.Message.Text, thanksCmd)
+	}, t.groupHandlerWrapper(t.thanksGroupHandler))
 
 	t.bot.Start(ctx)
 }

@@ -37,10 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := godotenv.Load(); err != nil {
-		l.ErrorContext(ctx, err.Error())
-		os.Exit(1)
-	}
+	_ = godotenv.Load()
 
 	if cfg.Stellar.FundAccount.Seed == "" {
 		cfg.Stellar.FundAccount.Seed = os.Getenv("FUND_SEED")

@@ -19,8 +19,8 @@ import (
 var startKeyboard = &models.InlineKeyboardMarkup{
 	InlineKeyboard: [][]models.InlineKeyboardButton{
 		{
-			{Text: "Отправить", CallbackData: "send"},
-			{Text: "Предложка", CallbackData: "suggest"},
+			{Text: textStartSend, CallbackData: "send"},
+			{Text: textStartSuggest, CallbackData: "suggest"},
 		},
 	},
 }
@@ -73,7 +73,7 @@ func (t *TGBot) startPrivateHandler(ctx context.Context, st db.State, upd *model
 var registerKeyboard = &models.InlineKeyboardMarkup{
 	InlineKeyboard: [][]models.InlineKeyboardButton{
 		{
-			{Text: "Регистрация", CallbackData: "register"},
+			{Text: textStartRegister, CallbackData: "register"},
 		},
 	},
 }
@@ -81,8 +81,9 @@ var registerKeyboard = &models.InlineKeyboardMarkup{
 func (t *TGBot) startRegister(ctx context.Context, st db.State) error {
 	msg, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:      st.UserID,
-		Text:        "Зарегистрируйся",
+		Text:        fmt.Sprintf(textStartWelcome, t.cfg.Stellar.FundAccount.AssetCode),
 		ReplyMarkup: registerKeyboard,
+		ParseMode:   models.ParseModeHTML,
 	})
 	if err != nil {
 		return err
@@ -108,8 +109,8 @@ func (t *TGBot) startBalance(ctx context.Context, acc db.Account, data map[strin
 
 	text := &strings.Builder{}
 
-	fmt.Fprintf(text, "Счет <a href=\"%s%s\">%s</a>\n", stellarExpertURLPrefix, acc.Address, addrAbbr(acc.Address))
-	fmt.Fprintf(text, "%s PANARCHY", bal)
+	fmt.Fprintf(text, textStartDashboard, stellarExpertURLPrefix, acc.Address,
+		addrAbbr(acc.Address), bal, t.cfg.Stellar.FundAccount.AssetCode)
 
 	msg, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:             acc.UserID,

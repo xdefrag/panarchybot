@@ -82,7 +82,7 @@ func (t *TGBot) privateHandlerWrapper(next func(ctx context.Context, state db.St
 
 			_, _ = t.bot.SendMessage(ctx, &bot.SendMessageParams{
 				ChatID: st.UserID,
-				Text:   "Что-то пошло не так, попробуйте еще раз",
+				Text:   textError,
 			})
 
 			_ = t.startPrivateHandler(ctx, st, upd)

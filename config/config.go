@@ -41,6 +41,10 @@ type Config struct {
 		Thanks struct {
 			Enable bool `toml:"enable"`
 		} `toml:"thanks"`
+		Welcome struct {
+			ChannelURL  string `toml:"channel_url"`
+			ChannelName string `toml:"channel_name"`
+		} `toml:"welcome"`
 	} `toml:"telegram"`
 }
 

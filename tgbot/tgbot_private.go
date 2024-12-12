@@ -38,7 +38,7 @@ func (t *TGBot) callbackSuggestPrivateHandler(ctx context.Context, st db.State, 
 		ChatID:      upd.CallbackQuery.From.ID,
 		MessageID:   upd.CallbackQuery.Message.Message.ID,
 		ReplyMarkup: nil,
-		Text:        "Предложи новость или задай вопрос",
+		Text:        textSuggestWelcome,
 	})
 
 	return err
@@ -64,7 +64,7 @@ func (t *TGBot) callbackSendPrivateHandler(ctx context.Context, st db.State, upd
 		ChatID:      upd.CallbackQuery.From.ID,
 		MessageID:   upd.CallbackQuery.Message.Message.ID,
 		ReplyMarkup: nil,
-		Text:        "Кому отправить?",
+		Text:        textSendToWhom,
 	})
 
 	return err
@@ -82,7 +82,7 @@ func (t *TGBot) callbackSendConfirmPrivateHandler(ctx context.Context, st db.Sta
 	if _, err := t.bot.EditMessageText(ctx, &bot.EditMessageTextParams{
 		ChatID:      upd.CallbackQuery.From.ID,
 		MessageID:   upd.CallbackQuery.Message.Message.ID,
-		Text:        "Отправляем транзакцию",
+		Text:        textSendNotifySendingTx,
 		ReplyMarkup: nil,
 	}); err != nil {
 		return err
@@ -97,7 +97,7 @@ func (t *TGBot) callbackSendConfirmPrivateHandler(ctx context.Context, st db.Sta
 	if err != nil {
 		if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: upd.CallbackQuery.From.ID,
-			Text:   "Произошла ошибка при отправке",
+			Text:   textSendError,
 		}); err != nil {
 			return err
 		}
@@ -107,7 +107,7 @@ func (t *TGBot) callbackSendConfirmPrivateHandler(ctx context.Context, st db.Sta
 
 	if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: upd.CallbackQuery.From.ID,
-		Text: fmt.Sprintf("<a href=\"%s\">Транзакция</a> успешно отправлена",
+		Text: fmt.Sprintf(textTemplateSendSuccess,
 			fmt.Sprintf(stellarExpertTxTemplate, t.cfg.Stellar.FundAccount.Network, hash),
 		),
 		ParseMode:          models.ParseModeHTML,

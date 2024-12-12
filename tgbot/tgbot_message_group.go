@@ -28,12 +28,12 @@ func (t *TGBot) thanksGroupHandler(ctx context.Context, upd *models.Update) erro
 
 	amount := t.getThanksAmount(upd.Message.Text)
 	if amount == 0 {
-		return t.answerMessage(ctx, upd, `Сорян, не распарсил количество :(`)
+		return t.answerMessage(ctx, upd, textThanksErrorAmount)
 	}
 
 	from, err := t.q.GetAccount(ctx, upd.Message.From.ID)
 	if err != nil {
-		if err := t.answerMessage(ctx, upd, `Не найден аккаунт. Тыкай давай в @panarchybot`); err != nil {
+		if err := t.answerMessage(ctx, upd, textThanksErrorAccountFrom); err != nil {
 			return err
 		}
 		return err
@@ -41,7 +41,7 @@ func (t *TGBot) thanksGroupHandler(ctx context.Context, upd *models.Update) erro
 
 	to, err := t.q.GetAccount(ctx, upd.Message.ReplyToMessage.From.ID)
 	if err != nil {
-		if err := t.answerMessage(ctx, upd, `Не найден аккаунт. Тыкай давай в @panarchybot`); err != nil {
+		if err := t.answerMessage(ctx, upd, textThanksErrorAccountTo); err != nil {
 			return err
 		}
 		return err
@@ -56,7 +56,7 @@ func (t *TGBot) thanksGroupHandler(ctx context.Context, upd *models.Update) erro
 	}
 
 	return t.answerMessage(ctx, upd,
-		fmt.Sprintf(`Успешно отправлено %f пользователю @%s.`, amount, upd.Message.ReplyToMessage.From.Username))
+		fmt.Sprintf(textTemplateThanksSuccess, amount, upd.Message.ReplyToMessage.From.Username))
 }
 
 func (t *TGBot) answerMessage(ctx context.Context, upd *models.Update, text string) error {

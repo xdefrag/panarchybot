@@ -39,7 +39,7 @@ func (t *TGBot) messageGroupHandler(ctx context.Context, upd *models.Update) err
 		ReplyMarkup: &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					{Text: "Забирай эйрдроп", URL: "https://panarchybot.t.me"},
+					{Text: textFollowUpButton, URL: textFollowUpLink},
 				},
 			},
 		},

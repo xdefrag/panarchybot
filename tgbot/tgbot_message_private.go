@@ -39,7 +39,7 @@ func (t *TGBot) suggestedPrivateHandler(ctx context.Context, st db.State, upd *m
 
 	if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: st.UserID,
-		Text:   "Спасибо за предложку!",
+		Text:   textSuggestSubmited,
 	}); err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (t *TGBot) sendToPrivateHandler(ctx context.Context, st db.State, upd *mode
 	if err != nil {
 		if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: st.UserID,
-			Text:   "Пользователь не найден",
+			Text:   textSendErrorUserNotFound,
 		}); err != nil {
 			return err
 		}
@@ -75,7 +75,7 @@ func (t *TGBot) sendToPrivateHandler(ctx context.Context, st db.State, upd *mode
 
 	if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: st.UserID,
-		Text:   "Сколько отправить?",
+		Text:   textSendAmount,
 	}); err != nil {
 		return err
 	}
@@ -86,8 +86,8 @@ func (t *TGBot) sendToPrivateHandler(ctx context.Context, st db.State, upd *mode
 var sendConfirmKeyboard = &models.InlineKeyboardMarkup{
 	InlineKeyboard: [][]models.InlineKeyboardButton{
 		{
-			{Text: "Да", CallbackData: "send_confirm"},
-			{Text: "Нет", CallbackData: "start"},
+			{Text: textSendYes, CallbackData: "send_confirm"},
+			{Text: textSendNo, CallbackData: "start"},
 		},
 	},
 }
@@ -118,7 +118,7 @@ func (t *TGBot) sendAmountPrivateHandler(ctx context.Context, st db.State, upd *
 	if amount > bal {
 		if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: st.UserID,
-			Text:   "Сумма больше баланса",
+			Text:   textSendErrorUserNotFound,
 		}); err != nil {
 			return err
 		}
@@ -130,8 +130,12 @@ func (t *TGBot) sendAmountPrivateHandler(ctx context.Context, st db.State, upd *
 
 	msg, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: st.UserID,
-		Text: fmt.Sprintf("Отправить <a href=\"%s%s\">%s</a> %s PANARCHY?",
-			stellarExpertURLPrefix, st.Data["send_to"], addrAbbr(st.Data["send_to"].(string)), st.Data["send_amount"]),
+		Text: fmt.Sprintf(textTemplateSendConfirm,
+			stellarExpertURLPrefix, st.Data["send_to"],
+			addrAbbr(st.Data["send_to"].(string)),
+			st.Data["send_amount"],
+			t.cfg.Stellar.FundAccount.AssetCode,
+		),
 		ParseMode:          models.ParseModeHTML,
 		ReplyMarkup:        sendConfirmKeyboard,
 		LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: lo.ToPtr(true)},

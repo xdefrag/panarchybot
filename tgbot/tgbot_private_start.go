@@ -80,8 +80,11 @@ var registerKeyboard = &models.InlineKeyboardMarkup{
 
 func (t *TGBot) startRegister(ctx context.Context, st db.State) error {
 	msg, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID:      st.UserID,
-		Text:        fmt.Sprintf(textStartWelcome, t.cfg.Stellar.FundAccount.AssetCode),
+		ChatID: st.UserID,
+		Text: fmt.Sprintf(textStartWelcome,
+			t.cfg.Telegram.Welcome.ChannelURL,
+			t.cfg.Telegram.Welcome.ChannelName,
+			t.cfg.Stellar.FundAccount.AssetCode),
 		ReplyMarkup: registerKeyboard,
 		ParseMode:   models.ParseModeHTML,
 	})

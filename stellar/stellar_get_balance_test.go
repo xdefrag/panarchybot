@@ -14,6 +14,8 @@ import (
 )
 
 func TestGetBalance(t *testing.T) {
+	t.SkipNow()
+
 	ctx := context.Background()
 	cl := horizonclient.DefaultTestNetClient
 

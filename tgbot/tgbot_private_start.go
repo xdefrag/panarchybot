@@ -42,18 +42,21 @@ func (t *TGBot) startPrivateHandler(ctx context.Context, st db.State, upd *model
 		}
 	}
 
-	data := make(map[string]interface{})
-	meta := make(map[string]interface{})
+	st.UserID = user.ID
+	st.State = stateStart
 
-	data["username"] = user.Username
-	meta["firstname"] = user.FirstName
-	meta["lastname"] = user.LastName
+	st.Data = make(map[string]interface{})
+	st.Meta = make(map[string]interface{})
+
+	st.Data["username"] = user.Username
+	st.Meta["firstname"] = user.FirstName
+	st.Meta["lastname"] = user.LastName
 
 	if err := t.q.CreateState(ctx, db.CreateStateParams{
-		UserID: user.ID,
-		State:  stateStart,
-		Data:   data,
-		Meta:   meta,
+		UserID: st.UserID,
+		State:  st.State,
+		Data:   st.Data,
+		Meta:   st.Meta,
 	}); err != nil {
 		return err
 	}
@@ -67,7 +70,7 @@ func (t *TGBot) startPrivateHandler(ctx context.Context, st db.State, upd *model
 		return t.startRegister(ctx, st)
 	}
 
-	return t.startBalance(ctx, acc, data)
+	return t.startBalance(ctx, acc, st.Data)
 }
 
 var registerKeyboard = &models.InlineKeyboardMarkup{

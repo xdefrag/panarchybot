@@ -2,11 +2,13 @@ package tgbot
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"strings"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"github.com/jackc/pgx/v5"
 	"github.com/xdefrag/panarchybot/campaign"
 	"github.com/xdefrag/panarchybot/chatgpt"
 	"github.com/xdefrag/panarchybot/config"
@@ -70,7 +72,7 @@ func (t *TGBot) privateHandlerWrapper(next func(ctx context.Context, state db.St
 		)
 
 		st, err := t.q.GetState(ctx, user.ID)
-		if err != nil {
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			l.ErrorContext(ctx, "failed to get state", slog.String("error", err.Error()))
 			return
 		}
@@ -81,7 +83,7 @@ func (t *TGBot) privateHandlerWrapper(next func(ctx context.Context, state db.St
 				slog.String("state", st.State))
 
 			_, _ = t.bot.SendMessage(ctx, &bot.SendMessageParams{
-				ChatID: st.UserID,
+				ChatID: user.ID,
 				Text:   textError,
 			})
 

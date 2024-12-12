@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -9,10 +10,13 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/jackc/pgx/v5"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	"github.com/pressly/goose/v3"
 	"github.com/stellar/go/clients/horizonclient"
+	"github.com/xdefrag/panarchybot"
 	"github.com/xdefrag/panarchybot/campaign"
 	"github.com/xdefrag/panarchybot/chatgpt"
 	"github.com/xdefrag/panarchybot/config"
@@ -38,6 +42,24 @@ func main() {
 	}
 
 	_ = godotenv.Load()
+
+	goose.SetDialect("pgx")
+	goose.SetBaseFS(panarchybot.EmbedMigrations)
+
+	conn, err := sql.Open("pgx", os.Getenv("POSTGRES_DSN"))
+	if err != nil {
+		l.ErrorContext(ctx, err.Error())
+		os.Exit(1)
+	}
+
+	if err := goose.UpContext(ctx, conn, "migrations"); err != nil { //
+		l.ErrorContext(ctx, err.Error())
+		os.Exit(1)
+	}
+	if err := goose.VersionContext(ctx, conn, "migrations"); err != nil {
+		l.ErrorContext(ctx, err.Error())
+		os.Exit(1)
+	}
 
 	if cfg.Stellar.FundAccount.Seed == "" {
 		cfg.Stellar.FundAccount.Seed = os.Getenv("FUND_SEED")

@@ -27,7 +27,7 @@ type AirdropResult struct {
 func (c *Campaign) Airdrop(ctx context.Context, p AirdropParams) (AirdropResult, error) {
 	res := AirdropResult{}
 
-	if c.cfg.Stellar.FundAccount.Airdrop.Enable {
+	if !c.cfg.Stellar.FundAccount.Airdrop.Enable {
 		return res, nil
 	}
 

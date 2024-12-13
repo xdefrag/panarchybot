@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"flag"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -15,6 +16,7 @@ import (
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/pressly/goose/v3"
+	"github.com/samber/lo"
 	"github.com/stellar/go/clients/horizonclient"
 	"github.com/xdefrag/panarchybot"
 	"github.com/xdefrag/panarchybot/campaign"
@@ -28,6 +30,9 @@ import (
 var Commit string
 
 func main() {
+	configPathPtr := flag.String("config", "", "path to config file")
+	flag.Parse()
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
@@ -36,7 +41,7 @@ func main() {
 		Level:     slog.LevelDebug,
 	})).With("commit", Commit)
 
-	cfg, err := config.Get()
+	cfg, err := config.Get(lo.FromPtr(configPathPtr))
 	if err != nil {
 		l.ErrorContext(ctx, err.Error())
 		os.Exit(1)

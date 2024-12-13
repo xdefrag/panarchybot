@@ -48,7 +48,7 @@ type Config struct {
 	} `toml:"telegram"`
 }
 
-func Get() (*Config, error) {
+func Get(paths ...string) (*Config, error) {
 	cfg := &Config{}
 
 	cd, err := os.Getwd()
@@ -56,14 +56,20 @@ func Get() (*Config, error) {
 		return nil, err
 	}
 
-	paths := []string{
+	defaultPaths := []string{
 		fmt.Sprintf("%s/panarchybot.dev.toml", cd),
 		fmt.Sprintf("%s/panarchybot.toml", cd),
 		fmt.Sprintf("%s/panarchybot/panarchybot.toml", os.Getenv("XDG_CONFIG_HOME")),
 		"/etc/panarchybot/panarchybot.toml",
 	}
 
+	paths = append(paths, defaultPaths...)
+
 	for _, path := range paths {
+		if path == "" {
+			continue
+		}
+
 		file, err := os.ReadFile(path)
 		if errors.Is(err, os.ErrNotExist) {
 			continue

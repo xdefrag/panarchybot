@@ -31,7 +31,7 @@ const (
 
 Нажми «Регистриация», чтобы создать свой счет.
 `
-	textStartDashboard = `Счет <a href=\"%s%s\">%s</a>
+	textStartDashboard = `Счет <a href="%s%s">%s</a>
 %s %s
 
 Нажми «Отправить», чтобы отправить токены %[5]s.

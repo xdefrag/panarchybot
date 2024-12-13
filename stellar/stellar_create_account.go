@@ -42,15 +42,16 @@ func (s *Stellar) createAccount(_ context.Context) (*keypair.Full, error) {
 		return nil, err
 	}
 
-	asset := txnbuild.CreditAsset{
-		Code:   s.cfg.Stellar.FundAccount.AssetCode,
-		Issuer: s.cfg.Stellar.FundAccount.AssetIssuer,
-	}
 	mainAccountDetails, err := s.cl.AccountDetail(horizonclient.AccountRequest{
 		AccountID: pairMain.Address(),
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	asset := txnbuild.CreditAsset{
+		Code:   s.cfg.Stellar.FundAccount.AssetCode,
+		Issuer: s.cfg.Stellar.FundAccount.AssetIssuer,
 	}
 
 	tx, err := txnbuild.NewTransaction(txnbuild.TransactionParams{

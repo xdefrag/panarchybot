@@ -32,7 +32,8 @@ func main() {
 	defer stop()
 
 	l := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
+		AddSource: true,
+		Level:     slog.LevelDebug,
 	})).With("commit", Commit)
 
 	cfg, err := config.Get()

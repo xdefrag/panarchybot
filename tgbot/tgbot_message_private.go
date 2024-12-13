@@ -118,7 +118,7 @@ func (t *TGBot) sendAmountPrivateHandler(ctx context.Context, st db.State, upd *
 	if amount > bal {
 		if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: st.UserID,
-			Text:   textSendErrorUserNotFound,
+			Text:   textSendErrorNotEnough,
 		}); err != nil {
 			return err
 		}

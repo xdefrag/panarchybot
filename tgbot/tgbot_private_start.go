@@ -33,12 +33,10 @@ func (t *TGBot) startPrivateHandler(ctx context.Context, st db.State, upd *model
 	if st, err := t.q.GetState(ctx, user.ID); err == nil {
 		menuID, ok := st.Data["menu_message_id"]
 		if ok {
-			if _, err := t.bot.DeleteMessage(ctx, &bot.DeleteMessageParams{
+			_, _ = t.bot.DeleteMessage(ctx, &bot.DeleteMessageParams{
 				ChatID:    user.ID,
 				MessageID: int(menuID.(float64)),
-			}); err != nil {
-				return err
-			}
+			})
 		}
 	}
 

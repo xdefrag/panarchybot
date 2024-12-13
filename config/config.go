@@ -33,6 +33,10 @@ type Config struct {
 		} `toml:"fund_account"`
 	} `toml:"stellar"`
 	Telegram struct {
+		Welcome struct {
+			ChannelURL  string `toml:"channel_url"`
+			ChannelName string `toml:"channel_name"`
+		} `toml:"welcome"`
 		MainChannelID int64 `toml:"main_channel_id"`
 		SuggestChatID int64 `toml:"suggest_chat_id"`
 		Private       struct {
@@ -41,10 +45,6 @@ type Config struct {
 		Thanks struct {
 			Enable bool `toml:"enable"`
 		} `toml:"thanks"`
-		Welcome struct {
-			ChannelURL  string `toml:"channel_url"`
-			ChannelName string `toml:"channel_name"`
-		} `toml:"welcome"`
 	} `toml:"telegram"`
 }
 

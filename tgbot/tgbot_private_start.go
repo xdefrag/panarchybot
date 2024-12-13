@@ -166,6 +166,9 @@ func (t *TGBot) registerPrivateHandler(ctx context.Context, st db.State, upd *mo
 		Address:  pair.Address(),
 		Seed:     pair.Seed(),
 	})
+	if err != nil {
+		return err
+	}
 
 	airdrop, err := t.campaign.Airdrop(ctx, campaign.AirdropParams{
 		Username: st.Data["username"].(string),

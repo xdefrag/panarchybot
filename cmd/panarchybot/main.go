@@ -49,7 +49,7 @@ func main() {
 
 	_ = godotenv.Load()
 
-	goose.SetDialect("pgx")
+	_ = goose.SetDialect("pgx")
 	goose.SetBaseFS(panarchybot.EmbedMigrations)
 
 	conn, err := sql.Open("pgx", os.Getenv("POSTGRES_DSN"))

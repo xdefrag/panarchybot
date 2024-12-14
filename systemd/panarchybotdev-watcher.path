@@ -1,0 +1,4 @@
+[Path]
+PathChanged=/usr/local/bin/panarchybotdev
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+[Unit]
+Description=Panarchybot dev restarter
+After=postgresql.target
+StartLimitIntervalSec=0
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl restart panarchybotdev.service
+[Install]
+WantedBy=multi-user.target

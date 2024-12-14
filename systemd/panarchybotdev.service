@@ -1,0 +1,13 @@
+[Unit]
+Description=Bot for Panarchy Now channel. Development branch.
+After=postgresql.target
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+User=panarchybot
+ExecStart=/usr/bin/env /usr/local/bin/panarchybotdev --config /etc/panarchybot/panarchybot.dev.toml
+EnvironmentFile=-/etc/panarchybot/dev.env
+[Install]
+WantedBy=multi-user.target

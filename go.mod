@@ -11,7 +11,7 @@ require (
 	github.com/pressly/goose/v3 v3.23.0
 	github.com/samber/lo v1.47.0
 	github.com/stellar/go v0.0.0-20241115082344-969db9917c2d
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 )
 
 require (

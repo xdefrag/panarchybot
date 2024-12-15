@@ -9,56 +9,79 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/jackc/pgx/v5"
+	"github.com/xdefrag/panarchybot"
 	"github.com/xdefrag/panarchybot/campaign"
 	"github.com/xdefrag/panarchybot/chatgpt"
 	"github.com/xdefrag/panarchybot/config"
 	"github.com/xdefrag/panarchybot/db"
-	"github.com/xdefrag/panarchybot/stellar"
+	"github.com/xdefrag/panarchybot/metrics"
 )
 
 type TGBot struct {
 	cfg      *config.Config
 	q        *db.Queries
 	bot      *bot.Bot
-	stellar  *stellar.Stellar
+	ledger   panarchybot.Ledger
 	gpt      *chatgpt.ChatGPT
 	campaign *campaign.Campaign
 	l        *slog.Logger
 }
 
 func (t *TGBot) Run(ctx context.Context) {
+	privateMWs := []panarchybot.TelegramBotPrivateMiddleware{
+		metrics.TelegramBotPrivateMiddleware,
+	}
+
 	t.bot.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact,
-		t.privateHandlerWrapper(t.startPrivateHandler))
+		t.newPrivateHandler(t.startPrivateHandler, privateMWs...))
 	t.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, "register", bot.MatchTypeExact,
-		t.privateHandlerWrapper(t.registerPrivateHandler))
+		t.newPrivateHandler(t.registerPrivateHandler, privateMWs...))
 	t.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, "start", bot.MatchTypeExact,
-		t.privateHandlerWrapper(t.startPrivateHandler))
+		t.newPrivateHandler(t.startPrivateHandler, privateMWs...))
 	t.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, "suggest", bot.MatchTypePrefix,
-		t.privateHandlerWrapper(t.callbackSuggestPrivateHandler))
+		t.newPrivateHandler(t.callbackSuggestPrivateHandler, privateMWs...))
 	t.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, "send", bot.MatchTypeExact,
-		t.privateHandlerWrapper(t.callbackSendPrivateHandler))
+		t.newPrivateHandler(t.callbackSendPrivateHandler, privateMWs...))
 	t.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, "send_confirm", bot.MatchTypeExact,
-		t.privateHandlerWrapper(t.callbackSendConfirmPrivateHandler))
+		t.newPrivateHandler(t.callbackSendConfirmPrivateHandler, privateMWs...))
 
 	t.bot.RegisterHandlerMatchFunc(func(upd *models.Update) bool {
 		return upd.Message != nil && upd.Message.Chat.Type == models.ChatTypePrivate
-	}, t.privateHandlerWrapper(t.messagePrivateHandler))
+	}, t.newPrivateHandler(t.messagePrivateHandler, privateMWs...))
+
+	groupMWs := []panarchybot.TelegramBotGroupMiddleware{
+		metrics.TelegramBotGroupMiddleware,
+	}
 
 	t.bot.RegisterHandlerMatchFunc(func(upd *models.Update) bool {
 		return upd.Message != nil && upd.Message.ForwardOrigin != nil &&
 			upd.Message.ForwardOrigin.MessageOriginChannel != nil &&
 			upd.Message.ForwardOrigin.MessageOriginChannel.Chat.ID == t.cfg.Telegram.MainChannelID
-	}, t.groupHandlerWrapper(t.messageGroupHandler))
+	}, t.newGroupHandler(t.messageGroupHandler, groupMWs...))
 
 	t.bot.RegisterHandlerMatchFunc(func(upd *models.Update) bool {
 		return upd.Message != nil && upd.Message.ReplyToMessage != nil &&
 			strings.HasPrefix(upd.Message.Text, thanksCmd)
-	}, t.groupHandlerWrapper(t.thanksGroupHandler))
+	}, t.newGroupHandler(t.thanksGroupHandler, groupMWs...))
 
 	t.bot.Start(ctx)
 }
 
-func (t *TGBot) privateHandlerWrapper(next func(ctx context.Context, state db.State, upd *models.Update) error) bot.HandlerFunc {
+func (t *TGBot) newPrivateHandler(handler panarchybot.TelegramBotPrivateHandler, mws ...panarchybot.TelegramBotPrivateMiddleware) bot.HandlerFunc {
+	for _, mw := range mws {
+		handler = mw(handler)
+	}
+	return t.privateHandlerWrapper(handler)
+}
+
+func (t *TGBot) newGroupHandler(handler panarchybot.TelegramBotGroupHandler, mws ...panarchybot.TelegramBotGroupMiddleware) bot.HandlerFunc {
+	for _, mw := range mws {
+		handler = mw(handler)
+	}
+	return t.groupHandlerWrapper(handler)
+}
+
+func (t *TGBot) privateHandlerWrapper(next panarchybot.TelegramBotPrivateHandler) bot.HandlerFunc {
 	return func(ctx context.Context, b *bot.Bot, upd *models.Update) {
 		if !t.cfg.Telegram.Private.Enable {
 			return
@@ -77,7 +100,7 @@ func (t *TGBot) privateHandlerWrapper(next func(ctx context.Context, state db.St
 			return
 		}
 
-		if err := next(ctx, st, upd); err != nil {
+		if err := next(ctx, st, upd, l); err != nil {
 			l.ErrorContext(ctx, "failed to handle message",
 				slog.String("error", err.Error()),
 				slog.String("state", st.State))
@@ -87,7 +110,7 @@ func (t *TGBot) privateHandlerWrapper(next func(ctx context.Context, state db.St
 				Text:   textError,
 			})
 
-			_ = t.startPrivateHandler(ctx, st, upd)
+			_ = t.startPrivateHandler(ctx, st, upd, l)
 			return
 		}
 
@@ -112,7 +135,7 @@ func New(
 	cfg *config.Config,
 	q *db.Queries,
 	b *bot.Bot,
-	s *stellar.Stellar,
+	ledger panarchybot.Ledger,
 	gpt *chatgpt.ChatGPT,
 	campaign *campaign.Campaign,
 	l *slog.Logger,
@@ -121,7 +144,7 @@ func New(
 		cfg:      cfg,
 		bot:      b,
 		q:        q,
-		stellar:  s,
+		ledger:   ledger,
 		gpt:      gpt,
 		campaign: campaign,
 		l:        l,

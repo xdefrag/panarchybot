@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"flag"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/pressly/goose/v3"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/samber/lo"
 	"github.com/stellar/go/clients/horizonclient"
 	"github.com/xdefrag/panarchybot"
@@ -23,6 +25,7 @@ import (
 	"github.com/xdefrag/panarchybot/chatgpt"
 	"github.com/xdefrag/panarchybot/config"
 	"github.com/xdefrag/panarchybot/db"
+	"github.com/xdefrag/panarchybot/metrics"
 	"github.com/xdefrag/panarchybot/stellar"
 	"github.com/xdefrag/panarchybot/tgbot"
 )
@@ -92,11 +95,18 @@ func main() {
 		horizonClient = horizonclient.DefaultTestNetClient
 	}
 
-	st := stellar.New(horizonClient, cfg, l)
+	ledger := stellar.New(horizonClient, cfg, l)
+	ledgerWithMetrics := metrics.NewLedgerWrapper(ledger)
 
 	camp := campaign.New(cfg)
 
-	tgbot := tgbot.New(cfg, db.New(pg), bot, st, gpt, camp, l)
+	tgbot := tgbot.New(cfg, db.New(pg), bot, ledgerWithMetrics, gpt, camp, l)
+
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+		_ = http.ListenAndServe(cfg.Metrics.Addr, mux)
+	}()
 
 	tgbot.Run(ctx) // blocks
 }

@@ -19,7 +19,7 @@ const (
 	stateSendConfirm = "send_confirm"
 )
 
-func (t *TGBot) callbackSuggestPrivateHandler(ctx context.Context, st db.State, upd *models.Update) error {
+func (t *TGBot) callbackSuggestPrivateHandler(ctx context.Context, st db.State, upd *models.Update, l *slog.Logger) error {
 	if _, err := t.bot.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: upd.CallbackQuery.ID,
 	}); err != nil {
@@ -45,7 +45,7 @@ func (t *TGBot) callbackSuggestPrivateHandler(ctx context.Context, st db.State, 
 	return err
 }
 
-func (t *TGBot) callbackSendPrivateHandler(ctx context.Context, st db.State, upd *models.Update) error {
+func (t *TGBot) callbackSendPrivateHandler(ctx context.Context, st db.State, upd *models.Update, l *slog.Logger) error {
 	if _, err := t.bot.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: upd.CallbackQuery.ID,
 	}); err != nil {
@@ -73,7 +73,7 @@ func (t *TGBot) callbackSendPrivateHandler(ctx context.Context, st db.State, upd
 
 const stellarExpertTxTemplate = "https://stellar.expert/explorer/%s/search?term=%s"
 
-func (t *TGBot) callbackSendConfirmPrivateHandler(ctx context.Context, st db.State, upd *models.Update) error {
+func (t *TGBot) callbackSendConfirmPrivateHandler(ctx context.Context, st db.State, upd *models.Update, l *slog.Logger) error {
 	if _, err := t.bot.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: upd.CallbackQuery.ID,
 	}); err != nil {
@@ -97,7 +97,7 @@ func (t *TGBot) callbackSendConfirmPrivateHandler(ctx context.Context, st db.Sta
 	sendTo := st.Data["send_to"].(string)
 	sendAmount := st.Data["send_amount"].(string)
 
-	hash, err := t.stellar.Send(ctx, accFrom.Seed, sendTo, sendAmount)
+	hash, err := t.ledger.Send(ctx, accFrom.Seed, sendTo, sendAmount)
 	if err != nil {
 		if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: upd.CallbackQuery.From.ID,
@@ -106,7 +106,7 @@ func (t *TGBot) callbackSendConfirmPrivateHandler(ctx context.Context, st db.Sta
 			return err
 		}
 
-		return t.startPrivateHandler(ctx, st, upd)
+		return t.startPrivateHandler(ctx, st, upd, l)
 	}
 
 	if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
@@ -122,9 +122,9 @@ func (t *TGBot) callbackSendConfirmPrivateHandler(ctx context.Context, st db.Sta
 
 	accTo, err := t.q.GetAccountByKey(ctx, sendTo)
 	if err != nil {
-		t.l.ErrorContext(ctx, "failed to get account by key",
+		l.ErrorContext(ctx, "failed to get account by key",
 			slog.String("error", err.Error()))
-		return t.startPrivateHandler(ctx, st, upd)
+		return t.startPrivateHandler(ctx, st, upd, l)
 	}
 
 	if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
@@ -135,9 +135,9 @@ func (t *TGBot) callbackSendConfirmPrivateHandler(ctx context.Context, st db.Sta
 		ParseMode:          models.ParseModeHTML,
 		LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: lo.ToPtr(true)},
 	}); err != nil {
-		t.l.ErrorContext(ctx, "failed to notify to-user about thanks transaction",
+		l.ErrorContext(ctx, "failed to notify to-user about thanks transaction",
 			slog.String("error", err.Error()))
 	}
 
-	return t.startPrivateHandler(ctx, st, upd)
+	return t.startPrivateHandler(ctx, st, upd, l)
 }

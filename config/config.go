@@ -13,6 +13,9 @@ type Config struct {
 		Model    string `toml:"model"`
 		Question string `toml:"question"`
 	} `toml:"open_ai"`
+	Metrics struct {
+		Addr string `toml:"addr"`
+	} `toml:"metrics"`
 	Stellar struct {
 		FundAccount struct {
 			Airdrop struct {

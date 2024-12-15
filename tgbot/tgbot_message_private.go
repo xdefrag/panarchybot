@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -15,20 +16,20 @@ import (
 
 var ErrNotExpectingInput = errors.New("not expecting input")
 
-func (t *TGBot) messagePrivateHandler(ctx context.Context, st db.State, upd *models.Update) error {
+func (t *TGBot) messagePrivateHandler(ctx context.Context, st db.State, upd *models.Update, l *slog.Logger) error {
 	switch st.State {
 	case stateSuggest:
-		return t.suggestedPrivateHandler(ctx, st, upd)
+		return t.suggestedPrivateHandler(ctx, st, upd, l)
 	case stateSendTo:
-		return t.sendToPrivateHandler(ctx, st, upd)
+		return t.sendToPrivateHandler(ctx, st, upd, l)
 	case stateSendAmount:
-		return t.sendAmountPrivateHandler(ctx, st, upd)
+		return t.sendAmountPrivateHandler(ctx, st, upd, l)
 	default:
 		return ErrNotExpectingInput
 	}
 }
 
-func (t *TGBot) suggestedPrivateHandler(ctx context.Context, st db.State, upd *models.Update) error {
+func (t *TGBot) suggestedPrivateHandler(ctx context.Context, st db.State, upd *models.Update, l *slog.Logger) error {
 	if _, err := t.bot.ForwardMessage(ctx, &bot.ForwardMessageParams{
 		ChatID:     t.cfg.Telegram.SuggestChatID,
 		FromChatID: st.UserID,
@@ -44,10 +45,10 @@ func (t *TGBot) suggestedPrivateHandler(ctx context.Context, st db.State, upd *m
 		return err
 	}
 
-	return t.startPrivateHandler(ctx, st, upd)
+	return t.startPrivateHandler(ctx, st, upd, l)
 }
 
-func (t *TGBot) sendToPrivateHandler(ctx context.Context, st db.State, upd *models.Update) error {
+func (t *TGBot) sendToPrivateHandler(ctx context.Context, st db.State, upd *models.Update, l *slog.Logger) error {
 	key := strings.ReplaceAll(upd.Message.Text, "@", "")
 
 	acc, err := t.q.GetAccountByKey(ctx, key)
@@ -92,7 +93,7 @@ var sendConfirmKeyboard = &models.InlineKeyboardMarkup{
 	},
 }
 
-func (t *TGBot) sendAmountPrivateHandler(ctx context.Context, st db.State, upd *models.Update) error {
+func (t *TGBot) sendAmountPrivateHandler(ctx context.Context, st db.State, upd *models.Update, l *slog.Logger) error {
 	acc, err := t.q.GetAccount(ctx, st.UserID)
 	if err != nil {
 		return err
@@ -100,7 +101,7 @@ func (t *TGBot) sendAmountPrivateHandler(ctx context.Context, st db.State, upd *
 
 	amountStr := upd.Message.Text
 
-	balStr, err := t.stellar.GetBalance(ctx, acc.Address)
+	balStr, err := t.ledger.GetBalance(ctx, acc.Address)
 	if err != nil {
 		return err
 	}

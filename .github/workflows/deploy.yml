@@ -30,5 +30,6 @@ jobs:
           else
             echo "Branch not supported for deployment" && exit 1
           fi
+          ssh -v -o StrictHostKeyChecking=no -i private_key "$REMOTE_USER@$REMOTE_HOST" -f "rm $REMOTE_PATH"
           scp -v -o StrictHostKeyChecking=no -i private_key dist/panarchybot "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH"
           rm private_key

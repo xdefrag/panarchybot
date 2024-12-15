@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/stellar/go/clients/horizonclient"
+	"github.com/xdefrag/panarchybot"
 	"github.com/xdefrag/panarchybot/config"
 )
 
@@ -20,3 +21,5 @@ func New(cl horizonclient.ClientInterface, cfg *config.Config, l *slog.Logger) *
 		l:   l,
 	}
 }
+
+var _ panarchybot.Ledger = (*Stellar)(nil)

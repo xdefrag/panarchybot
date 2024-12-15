@@ -18,7 +18,7 @@ const (
 	thanksAmount = 1
 )
 
-func (t *TGBot) thanksGroupHandler(ctx context.Context, upd *models.Update) error {
+func (t *TGBot) thanksGroupHandler(ctx context.Context, upd *models.Update, l *slog.Logger) error {
 	if !t.cfg.Telegram.Thanks.Enable {
 		return nil
 	}
@@ -50,10 +50,10 @@ func (t *TGBot) thanksGroupHandler(ctx context.Context, upd *models.Update) erro
 		return err
 	}
 
-	hash, err := t.stellar.Send(ctx, from.Seed, to.Address, amount)
+	hash, err := t.ledger.Send(ctx, from.Seed, to.Address, amount)
 	if err != nil { // TODO: handle error
 		errHor := horizonclient.GetError(err)
-		t.l.ErrorContext(ctx, "failed to send stellar transaction",
+		l.ErrorContext(ctx, "failed to send stellar transaction",
 			slog.String("error", errHor.Problem.Detail))
 		return err
 	}
@@ -66,7 +66,7 @@ func (t *TGBot) thanksGroupHandler(ctx context.Context, upd *models.Update) erro
 		ParseMode:          models.ParseModeHTML,
 		LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: lo.ToPtr(true)},
 	}); err != nil {
-		t.l.ErrorContext(ctx, "failed to notify to-user about thanks transaction",
+		l.ErrorContext(ctx, "failed to notify to-user about thanks transaction",
 			slog.String("error", err.Error()))
 	}
 

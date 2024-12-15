@@ -11,9 +11,9 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/samber/lo"
+	"github.com/xdefrag/panarchybot"
 	"github.com/xdefrag/panarchybot/campaign"
 	"github.com/xdefrag/panarchybot/db"
-	"github.com/xdefrag/panarchybot/stellar"
 )
 
 var startKeyboard = &models.InlineKeyboardMarkup{
@@ -27,7 +27,7 @@ var startKeyboard = &models.InlineKeyboardMarkup{
 
 const stellarExpertURLPrefix = "https://stellar.expert/explorer/public/account/"
 
-func (t *TGBot) startPrivateHandler(ctx context.Context, st db.State, upd *models.Update) error {
+func (t *TGBot) startPrivateHandler(ctx context.Context, st db.State, upd *models.Update, l *slog.Logger) error {
 	user := getUser(upd)
 
 	if st, err := t.q.GetState(ctx, user.ID); err == nil {
@@ -106,7 +106,7 @@ func (t *TGBot) startRegister(ctx context.Context, st db.State) error {
 }
 
 func (t *TGBot) startBalance(ctx context.Context, acc db.Account, data map[string]interface{}) error {
-	bal, err := t.stellar.GetBalance(ctx, acc.Address)
+	bal, err := t.ledger.GetBalance(ctx, acc.Address)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (t *TGBot) startBalance(ctx context.Context, acc db.Account, data map[strin
 	return nil
 }
 
-func (t *TGBot) registerPrivateHandler(ctx context.Context, st db.State, upd *models.Update) error {
+func (t *TGBot) registerPrivateHandler(ctx context.Context, st db.State, upd *models.Update, l *slog.Logger) error {
 	if _, err := t.bot.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: upd.CallbackQuery.ID,
 		Text:            "Регистрируем",
@@ -155,7 +155,7 @@ func (t *TGBot) registerPrivateHandler(ctx context.Context, st db.State, upd *mo
 		return err
 	}
 
-	pair, err := t.stellar.CreateAccount(ctx)
+	pair, err := t.ledger.CreateAccount(ctx)
 	if err != nil {
 		return err
 	}
@@ -180,15 +180,15 @@ func (t *TGBot) registerPrivateHandler(ctx context.Context, st db.State, upd *mo
 	}
 
 	if airdrop.Amount != "" {
-		_, err = t.stellar.Send(
+		_, err = t.ledger.Send(
 			ctx,
 			t.cfg.Stellar.FundAccount.Seed,
 			pair.Address(),
 			airdrop.Amount,
-			stellar.WithMemo(airdrop.Memo),
+			panarchybot.WithMemo(airdrop.Memo),
 		)
 		if err != nil {
-			t.l.ErrorContext(ctx, "failed to send airdrop",
+			l.ErrorContext(ctx, "failed to send airdrop",
 				slog.String("error", err.Error()),
 				slog.Int64("user_id", st.UserID),
 				slog.String("username", st.Data["username"].(string)),
@@ -206,7 +206,7 @@ func (t *TGBot) registerPrivateHandler(ctx context.Context, st db.State, upd *mo
 		}
 	}
 
-	return t.startPrivateHandler(ctx, st, upd)
+	return t.startPrivateHandler(ctx, st, upd, l)
 }
 
 func addrAbbr(addr string) string {

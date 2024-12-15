@@ -6,16 +6,17 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"github.com/xdefrag/panarchybot"
 )
 
-func (t *TGBot) groupHandlerWrapper(next func(ctx context.Context, upd *models.Update) error) bot.HandlerFunc {
+func (t *TGBot) groupHandlerWrapper(next panarchybot.TelegramBotGroupHandler) bot.HandlerFunc {
 	return func(ctx context.Context, b *bot.Bot, upd *models.Update) {
 		l := t.l.With(
 			"update_id", upd.ID,
 			"channel_id", upd.Message.Chat.ID,
 		)
 
-		if err := next(ctx, upd); err != nil {
+		if err := next(ctx, upd, l); err != nil {
 			l.ErrorContext(ctx, "failed to handle message",
 				slog.String("error", err.Error()))
 			return
@@ -25,7 +26,7 @@ func (t *TGBot) groupHandlerWrapper(next func(ctx context.Context, upd *models.U
 	}
 }
 
-func (t *TGBot) messageGroupHandler(ctx context.Context, upd *models.Update) error {
+func (t *TGBot) messageGroupHandler(ctx context.Context, upd *models.Update, l *slog.Logger) error {
 	res, err := t.gpt.MakeQuestion(ctx, upd.Message.Text)
 	if err != nil {
 		return err

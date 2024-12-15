@@ -6,22 +6,11 @@ import (
 	"github.com/stellar/go/clients/horizonclient"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/txnbuild"
+	"github.com/xdefrag/panarchybot"
 )
 
-type SendOptions struct {
-	Memo string
-}
-
-type SendOption func(*SendOptions)
-
-func WithMemo(memo string) SendOption {
-	return func(o *SendOptions) {
-		o.Memo = memo
-	}
-}
-
-func (c *Stellar) Send(ctx context.Context, fromSeed, toAddress, amount string, opts ...SendOption) (string, error) {
-	options := &SendOptions{
+func (c *Stellar) Send(ctx context.Context, fromSeed, toAddress, amount string, opts ...panarchybot.SendOption) (string, error) {
+	options := &panarchybot.SendOptions{
 		Memo: "live and let live",
 	}
 	for _, o := range opts {

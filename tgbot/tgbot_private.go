@@ -3,6 +3,7 @@ package tgbot
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -88,12 +89,15 @@ func (t *TGBot) callbackSendConfirmPrivateHandler(ctx context.Context, st db.Sta
 		return err
 	}
 
-	acc, err := t.q.GetAccount(ctx, st.UserID)
+	accFrom, err := t.q.GetAccount(ctx, st.UserID)
 	if err != nil {
 		return err
 	}
 
-	hash, err := t.stellar.Send(ctx, acc.Seed, st.Data["send_to"].(string), st.Data["send_amount"].(string))
+	sendTo := st.Data["send_to"].(string)
+	sendAmount := st.Data["send_amount"].(string)
+
+	hash, err := t.stellar.Send(ctx, accFrom.Seed, sendTo, sendAmount)
 	if err != nil {
 		if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: upd.CallbackQuery.From.ID,
@@ -114,6 +118,25 @@ func (t *TGBot) callbackSendConfirmPrivateHandler(ctx context.Context, st db.Sta
 		LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: lo.ToPtr(true)},
 	}); err != nil {
 		return err
+	}
+
+	accTo, err := t.q.GetAccountByKey(ctx, sendTo)
+	if err != nil {
+		t.l.ErrorContext(ctx, "failed to get account by key",
+			slog.String("error", err.Error()))
+		return t.startPrivateHandler(ctx, st, upd)
+	}
+
+	if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: accTo.UserID,
+		Text: fmt.Sprintf(textTemplateThanksReceived,
+			fmt.Sprintf(stellarExpertTxTemplate, t.cfg.Stellar.FundAccount.Network, hash),
+			sendAmount, t.cfg.Stellar.FundAccount.AssetCode, accFrom.Username),
+		ParseMode:          models.ParseModeHTML,
+		LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: lo.ToPtr(true)},
+	}); err != nil {
+		t.l.ErrorContext(ctx, "failed to notify to-user about thanks transaction",
+			slog.String("error", err.Error()))
 	}
 
 	return t.startPrivateHandler(ctx, st, upd)

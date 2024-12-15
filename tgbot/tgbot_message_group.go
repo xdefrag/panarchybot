@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"github.com/samber/lo"
 	"github.com/stellar/go/clients/horizonclient"
 )
 
@@ -26,10 +27,12 @@ func (t *TGBot) thanksGroupHandler(ctx context.Context, upd *models.Update) erro
 		return nil
 	}
 
-	amount := t.getThanksAmount(upd.Message.Text)
-	if amount == 0 {
+	amountF := t.getThanksAmount(upd.Message.Text)
+	if amountF == 0 {
 		return t.answerMessage(ctx, upd, textThanksErrorAmount)
 	}
+
+	amount := fmt.Sprintf("%f", amountF)
 
 	from, err := t.q.GetAccount(ctx, upd.Message.From.ID)
 	if err != nil {
@@ -47,7 +50,7 @@ func (t *TGBot) thanksGroupHandler(ctx context.Context, upd *models.Update) erro
 		return err
 	}
 
-	_, err = t.stellar.Send(ctx, from.Seed, to.Address, fmt.Sprintf("%f", amount))
+	hash, err := t.stellar.Send(ctx, from.Seed, to.Address, amount)
 	if err != nil { // TODO: handle error
 		errHor := horizonclient.GetError(err)
 		t.l.ErrorContext(ctx, "failed to send stellar transaction",
@@ -55,8 +58,21 @@ func (t *TGBot) thanksGroupHandler(ctx context.Context, upd *models.Update) erro
 		return err
 	}
 
+	if _, err = t.bot.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: to.UserID,
+		Text: fmt.Sprintf(textTemplateThanksReceived,
+			fmt.Sprintf(stellarExpertTxTemplate, t.cfg.Stellar.FundAccount.Network, hash),
+			amount, t.cfg.Stellar.FundAccount.AssetCode, upd.Message.From.Username),
+		ParseMode:          models.ParseModeHTML,
+		LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: lo.ToPtr(true)},
+	}); err != nil {
+		t.l.ErrorContext(ctx, "failed to notify to-user about thanks transaction",
+			slog.String("error", err.Error()))
+	}
+
 	return t.answerMessage(ctx, upd,
-		fmt.Sprintf(textTemplateThanksSuccess, amount, upd.Message.ReplyToMessage.From.Username))
+		fmt.Sprintf(textTemplateThanksSuccess,
+			amount, t.cfg.Stellar.FundAccount.AssetCode, upd.Message.ReplyToMessage.From.Username))
 }
 
 func (t *TGBot) answerMessage(ctx context.Context, upd *models.Update, text string) error {

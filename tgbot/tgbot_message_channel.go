@@ -27,7 +27,13 @@ func (t *TGBot) groupHandlerWrapper(next panarchybot.TelegramBotGroupHandler) bo
 }
 
 func (t *TGBot) messageGroupHandler(ctx context.Context, upd *models.Update, l *slog.Logger) error {
-	res, err := t.gpt.MakeQuestion(ctx, upd.Message.Text)
+	text := upd.Message.Text
+
+	if text == "" && upd.Message.Caption != "" {
+		text = upd.Message.Caption
+	}
+
+	res, err := t.gpt.MakeQuestion(ctx, text)
 	if err != nil {
 		return err
 	}

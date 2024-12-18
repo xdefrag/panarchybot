@@ -57,3 +57,37 @@ func (t *TGBot) messageGroupHandler(ctx context.Context, upd *models.Update, l *
 
 	return nil
 }
+
+const makeAPointCmd = "/make_a_point"
+
+func (t *TGBot) answerGroupHanlder(ctx context.Context, upd *models.Update, l *slog.Logger) error {
+	text := upd.Message.ReplyToMessage.Text
+
+	if text == "" && upd.Message.ReplyToMessage.Caption != "" {
+		text = upd.Message.ReplyToMessage.Caption
+	}
+
+	res, err := t.gpt.MakeQuestion(ctx, text)
+	if err != nil {
+		return err
+	}
+
+	if _, err := t.bot.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: upd.Message.Chat.ID,
+		ReplyParameters: &models.ReplyParameters{
+			MessageID: upd.Message.ReplyToMessage.ID,
+		},
+		ReplyMarkup: &models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{
+					{Text: textFollowUpButton, URL: textFollowUpLink},
+				},
+			},
+		},
+		Text: res,
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}

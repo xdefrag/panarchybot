@@ -9,7 +9,8 @@ import (
 )
 
 type Config struct {
-	OpenAI struct {
+	AdminUserIDs []int64 `toml:"admin_user_ids"`
+	OpenAI       struct {
 		Model    string `toml:"model"`
 		Question string `toml:"question"`
 	} `toml:"open_ai"`

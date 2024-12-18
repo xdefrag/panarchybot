@@ -9,6 +9,7 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/jackc/pgx/v5"
+	"github.com/samber/lo"
 	"github.com/xdefrag/panarchybot"
 	"github.com/xdefrag/panarchybot/campaign"
 	"github.com/xdefrag/panarchybot/chatgpt"
@@ -63,6 +64,11 @@ func (t *TGBot) Run(ctx context.Context) {
 		return upd.Message != nil && upd.Message.ReplyToMessage != nil &&
 			strings.HasPrefix(upd.Message.Text, thanksCmd)
 	}, t.newGroupHandler(t.thanksGroupHandler, groupMWs...))
+	t.bot.RegisterHandlerMatchFunc(func(upd *models.Update) bool {
+		return upd.Message != nil && upd.Message.ReplyToMessage != nil &&
+			lo.Contains(t.cfg.AdminUserIDs, upd.Message.From.ID) &&
+			upd.Message.Text == makeAPointCmd
+	}, t.newGroupHandler(t.answerGroupHanlder, groupMWs...))
 
 	t.bot.Start(ctx)
 }

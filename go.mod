@@ -3,7 +3,7 @@ module github.com/xdefrag/panarchybot
 go 1.22
 
 require (
-	github.com/go-telegram/bot v1.11.1
+	github.com/go-telegram/bot v1.13.3
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/joho/godotenv v1.5.1
 	github.com/openai/openai-go v0.1.0-alpha.39

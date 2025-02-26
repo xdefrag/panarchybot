@@ -20,7 +20,7 @@ import (
 
 type TGBot struct {
 	cfg      *config.Config
-	q        *db.Queries
+	q        db.Querier
 	bot      *bot.Bot
 	ledger   panarchybot.Ledger
 	gpt      *chatgpt.ChatGPT
@@ -139,7 +139,7 @@ func getUser(upd *models.Update) models.User {
 
 func New(
 	cfg *config.Config,
-	q *db.Queries,
+	q db.Querier,
 	b *bot.Bot,
 	ledger panarchybot.Ledger,
 	gpt *chatgpt.ChatGPT,

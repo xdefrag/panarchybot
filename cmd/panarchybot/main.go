@@ -9,9 +9,10 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/go-telegram/bot"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go"
@@ -60,6 +61,7 @@ func main() {
 		l.ErrorContext(ctx, err.Error())
 		os.Exit(1)
 	}
+	defer conn.Close()
 
 	if err := goose.UpContext(ctx, conn, "migrations"); err != nil { //
 		l.ErrorContext(ctx, err.Error())
@@ -84,11 +86,29 @@ func main() {
 		os.Exit(1)
 	}
 
-	pg, err := pgx.Connect(ctx, os.Getenv("POSTGRES_DSN"))
+	poolConfig, err := pgxpool.ParseConfig(os.Getenv("POSTGRES_DSN"))
 	if err != nil {
 		l.ErrorContext(ctx, err.Error())
 		os.Exit(1)
 	}
+
+	// Настраиваем пул
+	poolConfig.MaxConns = 10
+	poolConfig.MinConns = 2
+	poolConfig.MaxConnLifetime = time.Hour
+	poolConfig.MaxConnIdleTime = time.Minute * 30
+	poolConfig.HealthCheckPeriod = time.Second * 30
+	poolConfig.ConnConfig.ConnectTimeout = time.Second * 5
+
+	pg, err := pgxpool.NewWithConfig(ctx, poolConfig)
+	if err != nil {
+		l.ErrorContext(ctx, err.Error())
+		os.Exit(1)
+	}
+	defer pg.Close()
+
+	// Запускаем сбор метрик пула
+	metrics.StartPoolMetrics(ctx, pg)
 
 	horizonClient := horizonclient.DefaultPublicNetClient
 	if strings.Contains(cfg.Stellar.FundAccount.Passphrase, "Test") {
@@ -100,7 +120,10 @@ func main() {
 
 	camp := campaign.New(cfg)
 
-	tgbot := tgbot.New(cfg, db.New(pg), bot, ledgerWithMetrics, gpt, camp, l)
+	queries := db.New(pg)
+	queriesWithTimeout := db.WithTimeout(queries, time.Second*15)
+
+	tgbot := tgbot.New(cfg, queriesWithTimeout, bot, ledgerWithMetrics, gpt, camp, l)
 
 	go func() {
 		mux := http.NewServeMux()

@@ -8,7 +8,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/openai/openai-go v0.1.0-alpha.39
 	github.com/pelletier/go-toml v1.9.5
-	github.com/pressly/goose/v3 v3.23.1
+	github.com/pressly/goose/v3 v3.24.1
 	github.com/prometheus/client_golang v1.20.5
 	github.com/samber/lo v1.47.0
 	github.com/stellar/go v0.0.0-20241115082344-969db9917c2d
